@@ -27,4 +27,5 @@ private:
 private:
     const common_utils::UniqueValueMap<std::string, APIPCamera*>* cameras_;
     std::vector<uint8_t> last_compressed_png_;
+
 };

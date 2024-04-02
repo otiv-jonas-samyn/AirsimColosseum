@@ -20,6 +20,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PIPCamera.generated.h"
 
+class ASegmentationSorter;
 UCLASS()
 class AIRSIM_API APIPCamera : public ACineCameraActor //CinemAirSim
 {
@@ -135,4 +136,8 @@ private: //methods
     void copyCameraSettingsToAllSceneCapture(UCameraComponent* camera);
     void copyCameraSettingsToSceneCapture(UCameraComponent* src, USceneCaptureComponent2D* dst);
     //end CinemAirSim
+
+private:
+    ASegmentationSorter* _Instance_segmentation_sorter_;
+
 };

@@ -555,6 +555,17 @@ class VehicleClient:
         """
         return self.client.call('simListSceneObjects', name_regex)
 
+    
+    def simListInstanceSegmentationObjects(self):
+        return self.client.call('simListInstanceSegmentationObjects')
+
+    def simListInstanceSegmentationPoses(self, ned=True, only_visible=False):
+        poses_raw = self.client.call('simListInstanceSegmentationPoses', ned, only_visible)
+        return [Pose.from_msgpack(pose_raw) for pose_raw in poses_raw]
+
+    def simGetSegmentationColorMap(self):
+        return generate_colormap()
+
     def simLoadLevel(self, level_name):
         """
         Loads a level specified by its name
@@ -603,7 +614,7 @@ class VehicleClient:
         """
         return self.client.call('simDestroyObject', object_name)
 
-    def simSetSegmentationObjectID(self, mesh_name, object_id, is_name_regex = False):
+    def simSetSegmentationObjectID(self, mesh_name, object_id, is_name_regex = False, instanceID = 0, is_instanced = False):
         """
         Set segmentation ID for specific objects
 
@@ -619,7 +630,7 @@ class VehicleClient:
         Returns:
             bool: If the mesh was found
         """
-        return self.client.call('simSetSegmentationObjectID', mesh_name, object_id, is_name_regex)
+        return self.client.call('simSetSegmentationObjectID', mesh_name, object_id, is_name_regex, instanceID, is_instanced)
 
     def simGetSegmentationObjectID(self, mesh_name):
         """

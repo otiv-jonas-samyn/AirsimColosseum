@@ -2,9 +2,12 @@
 #include "Async/TaskGraphInterfaces.h"
 #include "HAL/RunnableThread.h"
 
+#include "Kismet/GameplayStatics.h"
+
 #include <thread>
 #include <mutex>
 #include "RenderRequest.h"
+
 #include "PIPCamera.h"
 
 std::unique_ptr<FRecordingThread> FRecordingThread::running_instance_;
@@ -28,15 +31,18 @@ void FRecordingThread::startRecording(const RecordingSetting& settings,
 
     running_instance_.reset(new FRecordingThread());
     running_instance_->settings_ = settings;
-    running_instance_->vehicle_sim_apis_ = vehicle_sim_apis;
 
-    for (const auto& vehicle_sim_api : vehicle_sim_apis) {
+    running_instance_->vehicle_sim_apis_    = vehicle_sim_apis;
+
+    for (const auto& vehicle_sim_api : vehicle_sim_apis) 
+    {
         auto vehicle_name = vehicle_sim_api->getVehicleName();
 
-        running_instance_->image_captures_[vehicle_name] = vehicle_sim_api->getImageCapture();
-        running_instance_->last_poses_[vehicle_name] = msr::airlib::Pose();
+        running_instance_->image_captures_[vehicle_name]    = vehicle_sim_api->getImageCapture();
+        running_instance_->last_poses_[vehicle_name]        = msr::airlib::Pose();
     }
 
+    running_instance_->image_Count_ = 0;
     running_instance_->last_screenshot_on_ = 0;
 
     running_instance_->recording_file_.reset(new RecordingFile());
@@ -64,7 +70,8 @@ bool FRecordingThread::isRecording()
 
 void FRecordingThread::stopRecording()
 {
-    if (running_instance_) {
+    if (running_instance_) 
+    {
         assert(finishing_instance_ == nullptr);
         finishing_instance_ = std::move(running_instance_);
         assert(!isRecording());
@@ -78,7 +85,8 @@ void FRecordingThread::killRecording()
 
     stopRecording();
     bool finished = finishing_signal_.waitForRetry(1, 5);
-    if (!finished) {
+    if (!finished) 
+    {
         UE_LOG(LogTemp, Log, TEXT("killing thread"));
         finishing_instance_->thread_->Kill(false);
     }
@@ -88,13 +96,16 @@ void FRecordingThread::killRecording()
 
 bool FRecordingThread::Init()
 {
-    if (first_) {
+    if (first_) 
+    {
         first_ = false;
     }
-    else {
+    else 
+    {
         finishing_signal_.wait();
     }
-    if (recording_file_) {
+    if (recording_file_) 
+    {
         UAirBlueprintLib::LogMessage(TEXT("Initiated recording thread"), TEXT(""), LogDebugLevel::Success);
     }
     return true;
@@ -102,29 +113,35 @@ bool FRecordingThread::Init()
 
 uint32 FRecordingThread::Run()
 {
-    while (stop_task_counter_.GetValue() == 0) {
+    while (stop_task_counter_.GetValue() == 0) 
+    {
         //make sure all vars are set up
-        if (is_ready_) {
+        if (is_ready_) 
+        {
             bool interval_elapsed = msr::airlib::ClockFactory::get()->elapsedSince(last_screenshot_on_) > settings_.record_interval;
 
-            if (interval_elapsed) {
+            if (interval_elapsed) 
+            {
                 last_screenshot_on_ = msr::airlib::ClockFactory::get()->nowNanos();
 
-                for (const auto& vehicle_sim_api : vehicle_sim_apis_) {
+                for (const auto& vehicle_sim_api : vehicle_sim_apis_) 
+                {
                     const auto& vehicle_name = vehicle_sim_api->getVehicleName();
 
                     const auto* kinematics = vehicle_sim_api->getGroundTruthKinematics();
                     bool is_pose_unequal = kinematics && last_poses_[vehicle_name] != kinematics->pose;
 
-                    if (!settings_.record_on_move || is_pose_unequal) {
+                    if (!settings_.record_on_move || is_pose_unequal) 
+                    {
                         last_poses_[vehicle_name] = kinematics->pose;
 
                         std::vector<ImageCaptureBase::ImageResponse> responses;
 
                         image_captures_[vehicle_name]->getImages(settings_.requests[vehicle_name], responses);
-                        recording_file_->appendRecord(responses, vehicle_sim_api);
+                        recording_file_->appendRecord(responses, vehicle_sim_api, image_Count_);
                     }
                 }
+                image_Count_++;
             }
         }
     }

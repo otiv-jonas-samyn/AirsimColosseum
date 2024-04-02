@@ -38,6 +38,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Recording")
     bool toggleRecording();
 
+    UFUNCTION(BlueprintCallable, Category = "Segmentation")
+    bool AddNewActorToSegmentation(AActor* Actor);
+
     UFUNCTION(BlueprintPure, Category = "Airsim | get stuff")
     static ASimModeBase* getSimMode();
 
@@ -121,19 +124,31 @@ public:
 
     const UnrealImageCapture* getImageCapture(const std::string& vehicle_name = "", bool external = false) const;
 
+    //SEGMENTATION
+    std::vector<std::string> GetAllSegmentationMeshIDs();
+    std::vector<msr::airlib::Pose> GetAllSegmentationMeshPoses(bool ned = true, bool only_visible = false);
+    bool SetMeshVertexColorID(const std::string& mesh_name, int object_id, bool is_name_regex, int InstanceID, bool isInstanced);
+    static void RunCommandOnGameThread(TFunction<void()> InFunction, bool wait = false, const TStatId InStatId = TStatId());
+    int GetMeshVertexColorID(const std::string& mesh_name);
+
+
     TMap<FString, FAssetData> asset_map;
     TMap<FString, AActor*> scene_object_map;
     UMaterial* domain_rand_material_;
 
-protected: //must overrides
     typedef msr::airlib::AirSimSettings AirSimSettings;
+    virtual const AirSimSettings& getSettings() const;
+protected: //must overrides
 
     virtual std::unique_ptr<msr::airlib::ApiServerBase> createApiServer() const;
     virtual void getExistingVehiclePawns(TArray<AActor*>& pawns) const;
     virtual bool isVehicleTypeSupported(const std::string& vehicle_type) const;
     virtual std::string getVehiclePawnPathName(const AirSimSettings::VehicleSetting& vehicle_setting) const;
     virtual PawnEvents* getVehiclePawnEvents(APawn* pawn) const;
+    
     virtual const common_utils::UniqueValueMap<std::string, APIPCamera*> getVehiclePawnCameras(APawn* pawn) const;
+    //virtual const common_utils::UniqueValueMap<std::string, ASegmentationCamera*> getVehiclePawnSegmentationCameras(APawn* pawn) const;
+
     virtual void initializeVehiclePawn(APawn* pawn);
     virtual std::unique_ptr<PawnSimApi> createVehicleSimApi(
         const PawnSimApi::Params& pawn_sim_api_params) const;
@@ -154,13 +169,17 @@ protected: //optional overrides
     virtual void initializeExternalCameras();
 
 protected: //Utility methods for derived classes
-    virtual const AirSimSettings& getSettings() const;
     FRotator toFRotator(const AirSimSettings::Rotation& rotation, const FRotator& default_val);
 
 protected:
     int record_tick_count;
     UPROPERTY()
     UClass* pip_camera_class;
+
+    //UPROPERTY()
+    //UClass* segmentation_camera_class;
+
+
     UPROPERTY()
     UParticleSystem* collision_display_template;
 
@@ -178,6 +197,10 @@ private:
     //assets loaded in constructor
     UPROPERTY()
     UClass* external_camera_class_;
+
+    //UPROPERTY()
+    //UClass* external_segmentation_camera_class_;
+
     UPROPERTY()
     UClass* camera_director_class_;
     UPROPERTY()
@@ -193,10 +216,17 @@ private:
     TTimePoint tod_sim_clock_start_; // sim start in local time
     TTimePoint tod_last_update_;
     TTimePoint tod_start_time_; // tod, configurable
+    
     bool tod_enabled_;
     float tod_celestial_clock_speed_;
     float tod_update_interval_secs_;
     bool tod_move_sun_;
+
+    /** The assigned color for each object */
+    TMap<FString, uint32> nameToColorIndexMap_;
+    TMap<FString, FString> ColorToNameMap_;
+    /** A list of paintable objects */
+    TMap<FString, UMeshComponent*> nameToComponentMap_;
 
     std::unique_ptr<NedTransform> global_ned_transform_;
     std::unique_ptr<msr::airlib::WorldSimApiBase> world_sim_api_;
@@ -206,6 +236,8 @@ private:
 
     std::vector<std::unique_ptr<msr::airlib::VehicleSimApiBase>> vehicle_sim_apis_;
     common_utils::UniqueValueMap<std::string, APIPCamera*> external_cameras_;
+    //common_utils::UniqueValueMap<std::string, ASegmentationCamera*> _external_segmentation_cameras_;
+    
     std::unique_ptr<UnrealImageCapture> external_image_capture_;
 
     UPROPERTY()
@@ -216,12 +248,16 @@ private:
     static ASimModeBase* SIMMODE;
 
 private:
+    void InitializeMeshVertexColorIDs();
     void setStencilIDs();
+
     void initializeTimeOfDay();
     void advanceTimeOfDay();
     void setSunRotation(FRotator rotation);
+    
     void setupPhysicsLoopPeriod();
     void showClockStats();
+    
     void drawLidarDebugPoints();
     void drawDistanceSensorDebugPoints();
 };

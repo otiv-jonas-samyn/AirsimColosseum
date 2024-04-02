@@ -21,7 +21,8 @@ RenderRequest::~RenderRequest()
 void RenderRequest::getScreenshot(std::shared_ptr<RenderParams> params[], std::vector<std::shared_ptr<RenderResult>>& results, unsigned int req_size, bool use_safe_method)
 {
     //TODO: is below really needed?
-    for (unsigned int i = 0; i < req_size; ++i) {
+    for (unsigned int i = 0; i < req_size; ++i) 
+    {
         results.push_back(std::make_shared<RenderResult>());
 
         if (!params[i]->pixels_as_float)
@@ -34,24 +35,29 @@ void RenderRequest::getScreenshot(std::shared_ptr<RenderParams> params[], std::v
     //make sure we are not on the rendering thread
     CheckNotBlockedOnRenderThread();
 
-    if (use_safe_method) {
-        for (unsigned int i = 0; i < req_size; ++i) {
+    if (use_safe_method) 
+    {
+        for (unsigned int i = 0; i < req_size; ++i) 
+        {
             //TODO: below doesn't work right now because it must be running in game thread
             FIntPoint img_size;
-            if (!params[i]->pixels_as_float) {
+            if (!params[i]->pixels_as_float) 
+            {
                 //below is documented method but more expensive because it forces flush
                 FTextureRenderTargetResource* rt_resource = params[i]->render_target->GameThread_GetRenderTargetResource();
                 auto flags = setupRenderResource(rt_resource, params[i].get(), results[i].get(), img_size);
                 rt_resource->ReadPixels(results[i]->bmp, flags);
             }
-            else {
+            else 
+            {
                 FTextureRenderTargetResource* rt_resource = params[i]->render_target->GetRenderTargetResource();
                 setupRenderResource(rt_resource, params[i].get(), results[i].get(), img_size);
                 rt_resource->ReadFloat16Pixels(results[i]->bmp_float);
             }
         }
     }
-    else {
+    else 
+    {
         //wait for render thread to pick up our task
         params_ = params;
         results_ = results.data();
@@ -92,7 +98,8 @@ void RenderRequest::getScreenshot(std::shared_ptr<RenderParams> params[], std::v
         });
 
         // wait for this task to complete
-        while (!wait_signal_->waitFor(5)) {
+        while (!wait_signal_->waitFor(5)) 
+        {
             // log a message and continue wait
             // lamda function still references a few objects for which there is no refcount.
             // Walking away will cause memory corruption, which is much more difficult to debug.
@@ -100,13 +107,17 @@ void RenderRequest::getScreenshot(std::shared_ptr<RenderParams> params[], std::v
         }
     }
 
-    for (unsigned int i = 0; i < req_size; ++i) {
-        if (!params[i]->pixels_as_float) {
-            if (results[i]->width != 0 && results[i]->height != 0) {
+    for (unsigned int i = 0; i < req_size; ++i) 
+    {
+        if (!params[i]->pixels_as_float)
+        {
+            if (results[i]->width != 0 && results[i]->height != 0) 
+            {
                 results[i]->image_data_uint8.SetNumUninitialized(results[i]->width * results[i]->height * 3, false);
                 if (params[i]->compress)
                     UAirBlueprintLib::CompressImageArray(results[i]->width, results[i]->height, results[i]->bmp, results[i]->image_data_uint8);
-                else {
+                else 
+                {
                     uint8* ptr = results[i]->image_data_uint8.GetData();
                     for (const auto& item : results[i]->bmp) {
                         *ptr++ = item.B;
@@ -116,10 +127,12 @@ void RenderRequest::getScreenshot(std::shared_ptr<RenderParams> params[], std::v
                 }
             }
         }
-        else {
+        else 
+        {
             results[i]->image_data_float.SetNumUninitialized(results[i]->width * results[i]->height);
             float* ptr = results[i]->image_data_float.GetData();
-            for (const auto& item : results[i]->bmp_float) {
+            for (const auto& item : results[i]->bmp_float) 
+            {
                 *ptr++ = item.R.GetFloat();
             }
         }
@@ -139,7 +152,8 @@ FReadSurfaceDataFlags RenderRequest::setupRenderResource(const FTextureRenderTar
 
 void RenderRequest::ExecuteTask()
 {
-    if (params_ != nullptr && req_size_ > 0) {
+    if (params_ != nullptr && req_size_ > 0) 
+    {
         for (unsigned int i = 0; i < req_size_; ++i) {
             FRHICommandListImmediate& RHICmdList = GetImmediateCommandList_ForRenderCommand();
             auto rt_resource = params_[i]->render_target->GetRenderTargetResource();

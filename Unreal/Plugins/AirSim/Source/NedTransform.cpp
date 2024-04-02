@@ -28,8 +28,11 @@ NedTransform::NedTransform(const AActor* pivot, const FTransform& global_transfo
 
 NedTransform::Vector3r NedTransform::toLocalNed(const FVector& position) const
 {
-    return NedTransform::toVector3r(position - local_ned_offset_,
-                                    1 / world_to_meters_,
+    FVector relative_position = position - local_ned_offset_;
+    float scale = 1 / world_to_meters_;
+
+    return NedTransform::toVector3r(relative_position,
+                                    scale,
                                     true);
 }
 NedTransform::Vector3r NedTransform::toLocalNedVelocity(const FVector& velocity) const
@@ -54,7 +57,19 @@ float NedTransform::toNed(float length) const
 }
 NedTransform::Pose NedTransform::toLocalNed(const FTransform& pose) const
 {
-    return Pose(toLocalNed(pose.GetLocation()), toNed(pose.GetRotation()));
+    FVector position  = pose.GetLocation();
+    FQuat orientation = pose.GetRotation();
+
+
+    FVector relative_position = position - local_ned_offset_;
+    float scale = 1 / world_to_meters_;
+
+    Vector3r localNedPosition = NedTransform::toVector3r(relative_position, scale, true);
+    //Vector3r localNedPosition       = toLocalNed(position);
+    
+    Quaternionr localNedOrientation = toNed(orientation);
+
+    return Pose(localNedPosition, localNedOrientation);
 }
 NedTransform::Pose NedTransform::toGlobalNed(const FTransform& pose) const
 {

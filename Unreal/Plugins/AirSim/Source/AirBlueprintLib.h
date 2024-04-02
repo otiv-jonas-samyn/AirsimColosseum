@@ -71,7 +71,11 @@ public:
         UGameplayStatics::GetAllActorsOfClass(context, T::StaticClass(), foundActors);
     }
 
+    
+    static std::vector<std::string> ListMatchingActorsOriginal(const UObject* context, const std::string& name_regex);
     static std::vector<std::string> ListMatchingActors(const UObject* context, const std::string& name_regex);
+
+
     UFUNCTION(BlueprintCallable, Category = "AirSim|LevelAPI")
     static bool loadLevel(UObject* context, const FString& level_name);
     UFUNCTION(BlueprintCallable, Category = "AirSim|LevelAPI")
@@ -96,14 +100,15 @@ public:
     static bool SetMeshStencilID(const std::string& mesh_name, int object_id,
                                  bool is_name_regex = false);
     static int GetMeshStencilID(const std::string& mesh_name);
-    static void InitializeMeshStencilIDs(bool override_existing);
+    static void InitializeMeshStencilIDs(bool override_existing, FString material_list);
 
     static bool IsInGameThread();
 
     template <class T>
     static std::string GetMeshName(T* mesh)
     {
-        switch (mesh_naming_method_) {
+        switch (mesh_naming_method_) 
+        {
         case msr::airlib::AirSimSettings::SegmentationSetting::MeshNamingMethodType::OwnerName:
             if (mesh->GetOwner())
                 return std::string(TCHAR_TO_UTF8(*(mesh->GetOwner()->GetName())));
@@ -123,7 +128,7 @@ public:
 
     template <class UserClass>
     static FInputActionBinding& BindActionToKey(const FName action_name, const FKey in_key, UserClass* actor,
-                                                typename FInputActionHandlerSignature::TUObjectMethodDelegate<UserClass>::FMethodPtr func, bool on_press_or_release = false,
+        typename FInputActionHandlerSignature::TUObjectMethodDelegate<UserClass>::FMethodPtr func, bool on_press_or_release = false,
                                                 bool shift_key = false, bool control_key = false, bool alt_key = false, bool command_key = false)
     {
         FInputActionKeyMapping action(action_name, in_key, shift_key, control_key, alt_key, command_key);
@@ -190,30 +195,27 @@ public:
 
 private:
     template <typename T>
-    static void InitializeObjectStencilID(T* mesh, bool override_existing = true)
+    static void InitializeObjectStencilID(T* mesh, std::map< std::string, int> materialMap, bool ignore_existing = true)
     {
-        SetRenderCustomDepth(mesh, true);
-
-        if (!override_existing && mesh->CustomDepthStencilValue != 0) {
-            // If value is non-zero and don't want to override
-            return;
-        }
-
         std::string mesh_name = common_utils::Utils::toLower(GetMeshName(mesh));
-        if (mesh_name == "" || common_utils::Utils::startsWith(mesh_name, "default_")) {
-            //common_utils::Utils::DebugBreak();
-            return;
-        }
-        FString name(mesh_name.c_str());
-        int hash = 5;
-        for (int idx = 0; idx < name.Len(); ++idx) {
-            auto char_num = UKismetStringLibrary::GetCharacterAsNumber(name, idx);
-            if (char_num < 97)
-                continue; //numerics and other punctuations
-            hash += char_num;
-        }
+        bool painted = false;
 
-        SetObjectStencilID(mesh, hash % 256);
+        for (std::map<std::string, int>::iterator iter = materialMap.begin(); iter != materialMap.end(); ++iter)
+        {
+            std::string materialName = iter->first;
+            if (common_utils::Utils::contains(mesh_name, "_material_" + materialName)) 
+            {
+                int value = iter->second;
+                if (ignore_existing || mesh->CustomDepthStencilValue == 0) {
+                    SetObjectStencilID(mesh, value);
+                }
+                painted = true;
+                break;
+            }
+        }
+        if (!painted) {
+            SetObjectStencilID(mesh, 0);
+        }
     }
 
     template <typename T>
@@ -233,10 +235,12 @@ private:
     template <typename T>
     static void SetObjectStencilID(T* mesh, int object_id)
     {
-        if (object_id < 0) {
+        if (object_id < 0)
+        {
             mesh->SetRenderCustomDepth(false);
         }
-        else {
+        else
+        {
             mesh->SetCustomDepthStencilValue(object_id);
             mesh->SetRenderCustomDepth(true);
         }
@@ -246,10 +250,12 @@ private:
 
     static void SetObjectStencilID(ALandscapeProxy* mesh, int object_id)
     {
-        if (object_id < 0) {
+        if (object_id < 0)
+        {
             mesh->bRenderCustomDepth = false;
         }
-        else {
+        else
+        {
             mesh->CustomDepthStencilValue = object_id;
             mesh->bRenderCustomDepth = true;
         }
@@ -257,11 +263,14 @@ private:
         // Explicitly set the custom depth state on the components so the
         // render state is marked dirty and the update actually takes effect
         // immediately.
-        for (ULandscapeComponent* comp : mesh->LandscapeComponents) {
-            if (object_id < 0) {
+        for (ULandscapeComponent* comp : mesh->LandscapeComponents)
+        {
+            if (object_id < 0)
+            {
                 comp->SetRenderCustomDepth(false);
             }
-            else {
+            else
+            {
                 comp->SetCustomDepthStencilValue(object_id);
                 comp->SetRenderCustomDepth(true);
             }

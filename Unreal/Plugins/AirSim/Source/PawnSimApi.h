@@ -11,7 +11,9 @@
 #include "common/common_utils/Signal.hpp"
 #include "common/CommonStructs.hpp"
 #include "common/GeodeticConverter.hpp"
+
 #include "PIPCamera.h"
+
 #include "physics/Kinematics.hpp"
 #include "NedTransform.h"
 #include "common/AirSimSettings.hpp"
@@ -45,7 +47,9 @@ public: //types
         const NedTransform* global_transform;
         PawnEvents* pawn_events;
         common_utils::UniqueValueMap<std::string, APIPCamera*> cameras;
+
         UClass* pip_camera_class;
+
         UParticleSystem* collision_display_template;
         msr::airlib::GeoPoint home_geopoint;
         std::string vehicle_name;
@@ -55,9 +59,9 @@ public: //types
         }
 
         Params(APawn* pawn_val, const NedTransform* global_transform_val, PawnEvents* pawn_events_val,
-               const common_utils::UniqueValueMap<std::string, APIPCamera*>& cameras_val, UClass* pip_camera_class_val,
-               UParticleSystem* collision_display_template_val, const msr::airlib::GeoPoint& home_geopoint_val,
-               const std::string& vehicle_name_val)
+            const common_utils::UniqueValueMap<std::string, APIPCamera*>& cameras_val, UClass* pip_camera_class_val,
+            UParticleSystem* collision_display_template_val, const msr::airlib::GeoPoint& home_geopoint_val,
+            const std::string& vehicle_name_val)
             : pawn(pawn_val)
             , global_transform(global_transform_val)
             , pawn_events(pawn_events_val)
@@ -68,6 +72,7 @@ public: //types
             , vehicle_name(vehicle_name_val)
         {
         }
+
     };
 
 public: //implementation of VehicleSimApiBase
@@ -138,7 +143,11 @@ private: //methods
     bool canTeleportWhileMove() const;
     void allowPassthroughToggleInput();
     void detectUsbRc();
+
     void setupCamerasFromSettings(const common_utils::UniqueValueMap<std::string, APIPCamera*>& cameras);
+    
+    //void setupCamerasFromSettings(const common_utils::UniqueValueMap<std::string, ASegmentationCamera*>& cameras);
+
     void createCamerasFromSettings();
     //on collision, pawns should update this
     void onCollision(class UPrimitiveComponent* MyComp, class AActor* Other, class UPrimitiveComponent* OtherComp,
@@ -155,7 +164,9 @@ private: //vars
     typedef msr::airlib::Environment Environment;
 
     Params params_;
+    
     common_utils::UniqueValueMap<std::string, APIPCamera*> cameras_;
+
     msr::airlib::GeoPoint home_geo_point_;
 
     std::string vehicle_name_;

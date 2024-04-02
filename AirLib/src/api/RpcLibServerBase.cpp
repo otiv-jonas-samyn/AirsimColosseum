@@ -258,8 +258,8 @@ namespace airlib
             getVehicleSimApi(vehicle_name)->setTraceLine(color_rgba, thickness);
         });
 
-        pimpl_->server.bind("simSetSegmentationObjectID", [&](const std::string& mesh_name, int object_id, bool is_name_regex) -> bool {
-            return getWorldSimApi()->setSegmentationObjectID(mesh_name, object_id, is_name_regex);
+        pimpl_->server.bind("simSetSegmentationObjectID", [&](const std::string& mesh_name, int object_id, bool is_name_regex, int instanceID, bool is_Instanced) -> bool {
+            return getWorldSimApi()->setSegmentationObjectID(mesh_name, object_id, is_name_regex, instanceID, is_Instanced);
         });
         pimpl_->server.bind("simGetSegmentationObjectID", [&](const std::string& mesh_name) -> int {
             return getWorldSimApi()->getSegmentationObjectID(mesh_name);
@@ -362,6 +362,14 @@ namespace airlib
 
         pimpl_->server.bind("simListSceneObjects", [&](const std::string& name_regex) -> std::vector<string> {
             return getWorldSimApi()->listSceneObjects(name_regex);
+        });
+
+        pimpl_->server.bind("simListInstanceSegmentationObjects", [&]() -> std::vector<string> {
+            return getWorldSimApi()->listInstanceSegmentationObjects();
+        });
+
+        pimpl_->server.bind("simListInstanceSegmentationPoses", [&](bool ned, bool only_visible) -> std::vector<RpcLibAdaptorsBase::Pose> {
+            return RpcLibAdaptorsBase::Pose::from(getWorldSimApi()->listInstanceSegmentationPoses(ned, only_visible));
         });
 
         pimpl_->server.bind("simLoadLevel", [&](const std::string& level_name) -> bool {

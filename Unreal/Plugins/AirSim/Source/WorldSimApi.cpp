@@ -302,24 +302,14 @@ bool WorldSimApi::addVehicle(const std::string& vehicle_name, const std::string&
     return result;
 }
 
-bool WorldSimApi::setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex)
+bool WorldSimApi::setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex, int instanceID, bool isInstanced)
 {
-    bool success;
-    UAirBlueprintLib::RunCommandOnGameThread([mesh_name, object_id, is_name_regex, &success]() {
-        success = UAirBlueprintLib::SetMeshStencilID(mesh_name, object_id, is_name_regex);
-    },
-                                             true);
-    return success;
+    return simmode_->SetMeshVertexColorID(mesh_name, object_id, is_name_regex, instanceID, isInstanced);
 }
 
 int WorldSimApi::getSegmentationObjectID(const std::string& mesh_name) const
 {
-    int result;
-    UAirBlueprintLib::RunCommandOnGameThread([&mesh_name, &result]() {
-        result = UAirBlueprintLib::GetMeshStencilID(mesh_name);
-    },
-                                             true);
-    return result;
+    return simmode_->GetMeshVertexColorID(mesh_name);
 }
 
 void WorldSimApi::printLogMessage(const std::string& message,
@@ -336,6 +326,16 @@ std::vector<std::string> WorldSimApi::listSceneObjects(const std::string& name_r
     },
                                              true);
     return result;
+}
+
+std::vector<std::string> WorldSimApi::listInstanceSegmentationObjects() const
+{
+    return simmode_->GetAllSegmentationMeshIDs();
+}
+
+std::vector <msr::airlib::Pose> WorldSimApi::listInstanceSegmentationPoses(bool ned, bool only_visible) const
+{
+    return simmode_->GetAllSegmentationMeshPoses(ned, only_visible);
 }
 
 bool WorldSimApi::runConsoleCommand(const std::string& command)
@@ -435,12 +435,14 @@ void WorldSimApi::setWeatherParameter(WeatherParameter param, float val)
 std::unique_ptr<std::vector<std::string>> WorldSimApi::swapTextures(const std::string& tag, int tex_id, int component_id, int material_id)
 {
     auto swappedObjectNames = std::make_unique<std::vector<std::string>>();
-    UAirBlueprintLib::RunCommandOnGameThread([this, &tag, tex_id, component_id, material_id, &swappedObjectNames]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, &tag, tex_id, component_id, material_id, &swappedObjectNames]() 
+        {
         //Split the tag string into individual tags.
         TArray<FString> splitTags;
         FString notSplit = FString(tag.c_str());
         FString next = "";
-        while (notSplit.Split(",", &next, &notSplit)) {
+        while (notSplit.Split(",", &next, &notSplit)) 
+        {
             next.TrimStartInline();
             splitTags.Add(next);
         }
@@ -471,34 +473,39 @@ std::unique_ptr<std::vector<std::string>> WorldSimApi::swapTextures(const std::s
 bool WorldSimApi::setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id)
 {
     bool success = false;
-    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &texture_path, &success, &component_id]() {
-        if (!IsValid(simmode_->domain_rand_material_)) {
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &texture_path, &success, &component_id]() 
+        {
+        if (!IsValid(simmode_->domain_rand_material_)) 
+        {
             UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
                                                "",
                                                LogDebugLevel::Failure);
         }
-        else {
+        else 
+        {
             UTexture2D* texture_desired = FImageUtils::ImportFileAsTexture2D(FString(texture_path.c_str()));
             AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
 
-            if (IsValid(actor)) {
+            if (IsValid(actor)) 
+            {
                 TArray<UStaticMeshComponent*> components;
                 actor->GetComponents<UStaticMeshComponent>(components);
-                for (UStaticMeshComponent* staticMeshComponent : components) {
+                for (UStaticMeshComponent* staticMeshComponent : components) 
+                {
                     UMaterialInstanceDynamic* dynamic_material = UMaterialInstanceDynamic::Create(simmode_->domain_rand_material_, staticMeshComponent);
                     dynamic_material->SetTextureParameterValue("TextureParameter", texture_desired);
                     staticMeshComponent->SetMaterial(component_id, dynamic_material);
                 }
                 success = true;
             }
-            else {
+            else 
+            {
                 UAirBlueprintLib::LogMessageString("Cannot find specified actor for domain randomization",
                                                    "",
                                                    LogDebugLevel::Failure);
             }
         }
-    },
-                                             true);
+    }, true);
 
     return success;
 }
@@ -904,8 +911,9 @@ std::vector<WorldSimApi::ImageCaptureBase::ImageResponse> WorldSimApi::getImages
 
 std::vector<uint8_t> WorldSimApi::getImage(ImageCaptureBase::ImageType image_type, const CameraDetails& camera_details) const
 {
+    //TODO fix
     std::vector<ImageCaptureBase::ImageRequest> request{
-        ImageCaptureBase::ImageRequest(camera_details.camera_name, image_type)
+        ImageCaptureBase::ImageRequest(camera_details.camera_name, image_type, false, true)
     };
 
     const auto& response = getImages(request, camera_details.vehicle_name, camera_details.external);
@@ -1045,16 +1053,16 @@ std::vector<msr::airlib::DetectionInfo> WorldSimApi::getDetections(ImageCaptureB
 
             Vector3r nedWrtOrigin = ned_transform.toGlobalNed(detections[i].Actor->GetActorLocation());
             result[i].geo_point = msr::airlib::EarthUtils::nedToGeodetic(nedWrtOrigin,
-                                                                         AirSimSettings::singleton().origin_geopoint);
+                                                                         msr::airlib::AirSimSettings::singleton().origin_geopoint);
 
-            result[i].box2D.min = Vector2r(detections[i].Box2D.Min.X, detections[i].Box2D.Min.Y);
-            result[i].box2D.max = Vector2r(detections[i].Box2D.Max.X, detections[i].Box2D.Max.Y);
+            result[i].box2D.min = msr::airlib::Vector2r(detections[i].Box2D.Min.X, detections[i].Box2D.Min.Y);
+            result[i].box2D.max = msr::airlib::Vector2r(detections[i].Box2D.Max.X, detections[i].Box2D.Max.Y);
 
             result[i].box3D.min = ned_transform.toLocalNed(detections[i].Box3D.Min);
             result[i].box3D.max = ned_transform.toLocalNed(detections[i].Box3D.Max);
 
             const Vector3r& position = ned_transform.toLocalNed(detections[i].RelativeTransform.GetTranslation());
-            const Quaternionr& orientation = ned_transform.toNed(detections[i].RelativeTransform.GetRotation());
+            const msr::airlib::Quaternionr& orientation = ned_transform.toNed(detections[i].RelativeTransform.GetRotation());
 
             result[i].relative_pose = Pose(position, orientation);
         }

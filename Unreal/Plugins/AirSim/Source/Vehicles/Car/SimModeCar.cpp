@@ -118,6 +118,7 @@ const common_utils::UniqueValueMap<std::string, APIPCamera*> ASimModeCar::getVeh
 {
     return (static_cast<const TVehiclePawn*>(pawn))->getCameras();
 }
+
 void ASimModeCar::initializeVehiclePawn(APawn* pawn)
 {
     auto vehicle_pawn = static_cast<TVehiclePawn*>(pawn);

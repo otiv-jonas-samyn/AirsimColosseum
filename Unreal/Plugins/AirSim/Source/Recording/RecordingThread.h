@@ -26,6 +26,7 @@ public:
     static void init();
     static void startRecording(const RecordingSetting& settings,
                                const common_utils::UniqueValueMap<std::string, VehicleSimApiBase*>& vehicle_sim_apis);
+
     static void stopRecording();
     static void killRecording();
     static bool isRecording();
@@ -38,6 +39,8 @@ protected:
 
 private:
     FThreadSafeCounter stop_task_counter_;
+
+    //static ASegmentationSorter* _pSegmentationSorter;
 
     static std::unique_ptr<FRecordingThread> running_instance_;
     static std::unique_ptr<FRecordingThread> finishing_instance_;
@@ -55,6 +58,7 @@ private:
     std::unordered_map<std::string, msr::airlib::Pose> last_poses_;
 
     msr::airlib::TTimePoint last_screenshot_on_;
+    int image_Count_{};
 
     bool is_ready_;
 };

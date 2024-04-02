@@ -60,6 +60,9 @@ namespace airlib
         void simSetWeatherParameter(WorldSimApiBase::WeatherParameter param, float val);
 
         vector<string> simListSceneObjects(const string& name_regex = string(".*")) const;
+        vector<string> simListInstanceSegmentationObjects() const;
+        vector<Pose> simListInstanceSegmentationPoses(bool ned = true, bool only_visible = false) const;
+
         Pose simGetObjectPose(const std::string& object_name) const;
         bool simLoadLevel(const string& level_name);
         Vector3r simGetObjectScale(const std::string& object_name) const;
@@ -73,7 +76,7 @@ namespace airlib
         void cancelLastTask(const std::string& vehicle_name = "");
         virtual RpcLibClientBase* waitOnLastTask(bool* task_result = nullptr, float timeout_sec = Utils::nan<float>());
 
-        bool simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false);
+        bool simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false);
         int simGetSegmentationObjectID(const std::string& mesh_name) const;
         void simPrintLogMessage(const std::string& message, std::string message_param = "", unsigned char severity = 0);
 

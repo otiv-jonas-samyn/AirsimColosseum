@@ -7,7 +7,9 @@
 
 #include "AirBlueprintLib.h"
 #include "common/ClockFactory.hpp"
+
 #include "PIPCamera.h"
+
 #include "NedTransform.h"
 #include "common/EarthUtils.hpp"
 
@@ -27,22 +29,22 @@ void PawnSimApi::initialize()
     kinematics_.reset(new Kinematics(initial_kinematic_state));
 
     Environment::State initial_environment;
-    initial_environment.position = initial_kinematic_state.pose.position;
-    initial_environment.geo_point = params_.home_geopoint;
+    initial_environment.position    = initial_kinematic_state.pose.position;
+    initial_environment.geo_point   = params_.home_geopoint;
     environment_.reset(new Environment(initial_environment));
 
     //initialize state
     params_.pawn->GetActorBounds(true, initial_state_.mesh_origin, initial_state_.mesh_bounds);
-    initial_state_.ground_offset = FVector(0, 0, initial_state_.mesh_bounds.Z);
-    initial_state_.transformation_offset = params_.pawn->GetActorLocation() - initial_state_.ground_offset;
-    ground_margin_ = FVector(0, 0, 20); //TODO: can we explain params_.pawn experimental setting? 7 seems to be minimum
-    ground_trace_end_ = initial_state_.ground_offset + ground_margin_;
+    initial_state_.ground_offset            = FVector(0, 0, initial_state_.mesh_bounds.Z);
+    initial_state_.transformation_offset    = params_.pawn->GetActorLocation() - initial_state_.ground_offset;
+    ground_margin_                          = FVector(0, 0, 20); //TODO: can we explain params_.pawn experimental setting? 7 seems to be minimum
+    ground_trace_end_                       = initial_state_.ground_offset + ground_margin_;
 
     setStartPosition(getUUPosition(), getUUOrientation());
 
-    initial_state_.tracing_enabled = getVehicleSetting()->enable_trace;
-    initial_state_.collisions_enabled = getVehicleSetting()->enable_collisions;
-    initial_state_.passthrough_enabled = getVehicleSetting()->enable_collision_passthrough;
+    initial_state_.tracing_enabled      = getVehicleSetting()->enable_trace;
+    initial_state_.collisions_enabled   = getVehicleSetting()->enable_collisions;
+    initial_state_.passthrough_enabled  = getVehicleSetting()->enable_collision_passthrough;
 
     initial_state_.collision_info = CollisionInfo();
 
@@ -50,6 +52,7 @@ void PawnSimApi::initialize()
     initial_state_.was_last_move_teleport = canTeleportWhileMove();
 
     setupCamerasFromSettings(params_.cameras);
+
     image_capture_.reset(new UnrealImageCapture(&cameras_));
 
     //add listener for pawn's collision event
@@ -62,8 +65,8 @@ void PawnSimApi::setStartPosition(const FVector& position, const FRotator& rotat
     initial_state_.start_location = getUUPosition();
     initial_state_.start_rotation = getUUOrientation();
 
-    initial_state_.last_position = initial_state_.start_location;
-    initial_state_.last_debug_position = initial_state_.start_location;
+    initial_state_.last_position        = initial_state_.start_location;
+    initial_state_.last_debug_position  = initial_state_.start_location;
 
     //compute our home point
     Vector3r nedWrtOrigin = ned_transform_.toGlobalNed(initial_state_.start_location);
@@ -125,7 +128,8 @@ void PawnSimApi::createCamerasFromSettings()
     const auto& transform = getNedTransform();
 
     //for each camera in settings
-    for (const auto& camera_setting_pair : getVehicleSetting()->cameras) {
+    for (const auto& camera_setting_pair : getVehicleSetting()->cameras) 
+    {
         const auto& setting = camera_setting_pair.second;
 
         //get pose
@@ -553,18 +557,14 @@ msr::airlib::Environment* PawnSimApi::getEnvironment()
 std::string PawnSimApi::getRecordFileLine(bool is_header_line) const
 {
     if (is_header_line) {
-        return "VehicleName\tTimeStamp\tPOS_X\tPOS_Y\tPOS_Z\tQ_W\tQ_X\tQ_Y\tQ_Z\t";
+        return "VehicleName\tTimeStamp\t";
     }
 
-    const auto* kinematics = getGroundTruthKinematics();
     const uint64_t timestamp_millis = static_cast<uint64_t>(clock()->nowNanos() / 1.0E6);
 
     std::ostringstream ss;
     ss << getVehicleName() << "\t";
     ss << timestamp_millis << "\t";
-    ss << kinematics->pose.position.x() << "\t" << kinematics->pose.position.y() << "\t" << kinematics->pose.position.z() << "\t";
-    ss << kinematics->pose.orientation.w() << "\t" << kinematics->pose.orientation.x() << "\t"
-       << kinematics->pose.orientation.y() << "\t" << kinematics->pose.orientation.z() << "\t";
 
     return ss.str();
 }

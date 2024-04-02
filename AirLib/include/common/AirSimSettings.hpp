@@ -423,6 +423,7 @@ namespace airlib
         CameraSettingMap external_cameras;
 
         std::string settings_text_ = "";
+        std::string material_list_file = "";
 
     public: //methods
         static AirSimSettings& singleton()
@@ -608,6 +609,20 @@ namespace airlib
                     physics_engine_name = "FastPhysicsEngine";
                 else
                     physics_engine_name = "PhysX"; //this value is only informational for now
+            }
+
+            material_list_file = getMaterialListFile();
+        }
+
+        std::string getMaterialListFile()
+        {
+
+            if (FILE* file = fopen(msr::airlib::Settings::getExecutableFullPath("materials.csv").c_str(), "r")) {
+                fclose(file);
+                return material_list_file = msr::airlib::Settings::getExecutableFullPath("materials.csv");
+            }
+            else {
+                return material_list_file = msr::airlib::Settings::Settings::getUserDirectoryFullPath("materials.csv");
             }
         }
 

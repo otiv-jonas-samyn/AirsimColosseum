@@ -27,6 +27,9 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "DetectionComponent.h"
 #include "CineCameraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
 
 /*
 //TODO: change naming conventions to same as other files?
@@ -96,7 +99,6 @@ bool UAirBlueprintLib::loadLevel(UObject* context, const FString& level_name)
 
 bool UAirBlueprintLib::spawnPlayer(UWorld* context)
 {
-
     bool success{ false };
     TArray<AActor*> player_start_actors;
     FindAllActor<APlayerStart>(context, player_start_actors);
@@ -339,20 +341,10 @@ void UAirBlueprintLib::RunCommandOnGameThread(TFunction<void()> InFunction, bool
 template <>
 std::string UAirBlueprintLib::GetMeshName<USkinnedMeshComponent>(USkinnedMeshComponent* mesh)
 {
-    switch (mesh_naming_method_) {
-    case msr::airlib::AirSimSettings::SegmentationSetting::MeshNamingMethodType::OwnerName:
-        if (mesh->GetOwner())
-            return std::string(TCHAR_TO_UTF8(*(mesh->GetOwner()->GetName())));
-        else
-            return ""; // std::string(TCHAR_TO_UTF8(*(UKismetSystemLibrary::GetDisplayName(mesh))));
-    case msr::airlib::AirSimSettings::SegmentationSetting::MeshNamingMethodType::StaticMeshName:
-        if (mesh->SkeletalMesh)
-            return std::string(TCHAR_TO_UTF8(*(mesh->SkeletalMesh->GetName())));
-        else
-            return "";
-    default:
-        return "";
-    }
+    if (mesh->GetOwner())
+        return std::string(TCHAR_TO_UTF8(*(mesh->GetOwner()->GetName())));
+    else
+        return ""; // std::string(TCHAR_TO_UTF8(*(UKismetSystemLibrary::GetDisplayName(mesh))));
 }
 
 std::string UAirBlueprintLib::GetMeshName(ALandscapeProxy* mesh)
@@ -360,20 +352,38 @@ std::string UAirBlueprintLib::GetMeshName(ALandscapeProxy* mesh)
     return std::string(TCHAR_TO_UTF8(*(mesh->GetName())));
 }
 
-void UAirBlueprintLib::InitializeMeshStencilIDs(bool override_existing)
+void UAirBlueprintLib::InitializeMeshStencilIDs(bool ignore_existing, FString material_list)
 {
-    for (TObjectIterator<UStaticMeshComponent> comp; comp; ++comp) {
-        InitializeObjectStencilID(*comp, override_existing);
+    std::string materialListString = std::string(TCHAR_TO_UTF8(*material_list));
+    std::map< std::string, int> materialMap;
+
+
+    std::istringstream iss(materialListString);
+    std::string line, word;
+    int stencil_index = 1;
+
+    while (std::getline(iss, line))
+    {
+        std::stringstream ss(line);
+        std::vector<std::string> row;
+        while (std::getline(ss, word, ',')) {
+            row.push_back(word);
+        }
+        materialMap.emplace(row[0], stencil_index);
+        stencil_index = stencil_index + 1;
     }
-    for (TObjectIterator<USkinnedMeshComponent> comp; comp; ++comp) {
-        InitializeObjectStencilID(*comp, override_existing);
+
+    for (TObjectIterator<UStaticMeshComponent> comp; comp; ++comp)
+    {
+        InitializeObjectStencilID(*comp, materialMap, ignore_existing);
     }
-    //for (TObjectIterator<UFoliageType> comp; comp; ++comp)
-    //{
-    //    InitializeObjectStencilID(*comp);
-    //}
-    for (TObjectIterator<ALandscapeProxy> comp; comp; ++comp) {
-        InitializeObjectStencilID(*comp, override_existing);
+    for (TObjectIterator<USkinnedMeshComponent> comp; comp; ++comp)
+    {
+        InitializeObjectStencilID(*comp, materialMap, ignore_existing);
+    }
+    for (TObjectIterator<ALandscapeProxy> comp; comp; ++comp)
+    {
+        InitializeObjectStencilID(*comp, materialMap, ignore_existing);
     }
 }
 
@@ -386,13 +396,16 @@ bool UAirBlueprintLib::SetMeshStencilID(const std::string& mesh_name, int object
         name_regex.assign(mesh_name, std::regex_constants::icase);
 
     int changes = 0;
-    for (TObjectIterator<UStaticMeshComponent> comp; comp; ++comp) {
+    for (TObjectIterator<UStaticMeshComponent> comp; comp; ++comp)
+    {
         SetObjectStencilIDIfMatch(*comp, object_id, mesh_name, is_name_regex, name_regex, changes);
     }
-    for (TObjectIterator<USkinnedMeshComponent> comp; comp; ++comp) {
+    for (TObjectIterator<USkinnedMeshComponent> comp; comp; ++comp)
+    {
         SetObjectStencilIDIfMatch(*comp, object_id, mesh_name, is_name_regex, name_regex, changes);
     }
-    for (TObjectIterator<ALandscapeProxy> comp; comp; ++comp) {
+    for (TObjectIterator<ALandscapeProxy> comp; comp; ++comp)
+    {
         SetObjectStencilIDIfMatch(*comp, object_id, mesh_name, is_name_regex, name_regex, changes);
     }
 
@@ -401,46 +414,98 @@ bool UAirBlueprintLib::SetMeshStencilID(const std::string& mesh_name, int object
 
 int UAirBlueprintLib::GetMeshStencilID(const std::string& mesh_name)
 {
-    // Takes a UStaticMeshComponent, USkinnedMeshComponent or ALandscapeProxy and returns their custom stencil ID if
-    // their meshes's name or their owner's name (depending on the naming method in mesh_naming_method_) equals mesh_name
-    auto getCustomStencilForMesh = [&mesh_name](auto mesh) -> int {
-        const std::string component_mesh_name = common_utils::Utils::toLower(GetMeshName(mesh));
-        if (component_mesh_name.compare(mesh_name) == 0) {
+    FString fmesh_name(mesh_name.c_str());
+    for (TObjectIterator<UMeshComponent> comp; comp; ++comp)
+    {
+        // Access the subclass instance with the * or -> operators.
+        UMeshComponent* mesh = *comp;
+        if (mesh->GetName() == fmesh_name) {
             return mesh->CustomDepthStencilValue;
         }
-        return -1;
-    };
-
-    for (TObjectIterator<UStaticMeshComponent> comp; comp; ++comp) {
-        int id = getCustomStencilForMesh(*comp);
-        if (id != -1)
-            return id;
-    }
-    for (TObjectIterator<USkinnedMeshComponent> comp; comp; ++comp) {
-        int id = getCustomStencilForMesh(*comp);
-        if (id != -1)
-            return id;
-    }
-    for (TObjectIterator<ALandscapeProxy> comp; comp; ++comp) {
-        int id = getCustomStencilForMesh(*comp);
-        if (id != -1)
-            return id;
     }
 
     return -1;
 }
+
+std::vector<std::string> UAirBlueprintLib::ListMatchingActorsOriginal(const UObject* context, const std::string& name_regex)
+{
+    std::vector<std::string> results;
+    auto world = context->GetWorld();
+    std::regex compiledRegex(name_regex, std::regex::optimize);
+    for (TActorIterator<AActor> actorIterator(world); actorIterator; ++actorIterator)
+    {
+        AActor* actor = *actorIterator;
+        auto name = std::string(TCHAR_TO_UTF8(*actor->GetName()));
+        bool match = std::regex_match(name, compiledRegex);
+        if (match)
+            results.push_back(name);
+    }
+    return results;
+}
+
 
 std::vector<std::string> UAirBlueprintLib::ListMatchingActors(const UObject* context, const std::string& name_regex)
 {
     std::vector<std::string> results;
     auto world = context->GetWorld();
     std::regex compiledRegex(name_regex, std::regex::optimize);
-    for (TActorIterator<AActor> actorIterator(world); actorIterator; ++actorIterator) {
+    for (TActorIterator<AActor> actorIterator(world); actorIterator; ++actorIterator)
+    {
         AActor* actor = *actorIterator;
-        auto name = std::string(TCHAR_TO_UTF8(*actor->GetName()));
-        bool match = std::regex_match(name, compiledRegex);
-        if (match)
-            results.push_back(name);
+        TArray<UMeshComponent*> paintable_components;
+        actor->GetComponents<UMeshComponent>(paintable_components);
+        int index = 0;
+        for (auto component : paintable_components)
+        {
+            FString mesh_name;
+            if (paintable_components.Num() == 1) {
+                if (UStaticMeshComponent* staticmesh_component = Cast<UStaticMeshComponent>(component)) {
+                    if (actor->GetParentActor()) {
+                        mesh_name = staticmesh_component->GetStaticMesh()->GetName();
+                        mesh_name.Append("_");
+                        mesh_name.Append(FString::FromInt(0));
+                        mesh_name.Append("_");
+                        if (actor->GetRootComponent()->GetAttachParent()) {
+                            mesh_name.Append(actor->GetRootComponent()->GetAttachParent()->GetName());
+                            mesh_name.Append("_");
+                        }
+                        mesh_name.Append(actor->GetParentActor()->GetName());
+                    }
+                    else {
+                        mesh_name = actor->GetName();
+                    }
+                }
+                if (USkinnedMeshComponent* skinnedmesh_component = Cast<USkinnedMeshComponent>(component)) {
+                    mesh_name = actor->GetName();
+                }
+            }
+            else {
+                if (UStaticMeshComponent* staticmesh_component = Cast<UStaticMeshComponent>(component)) {
+                    mesh_name = staticmesh_component->GetStaticMesh()->GetName();
+                    mesh_name.Append("_");
+                    mesh_name.Append(FString::FromInt(index));
+                    mesh_name.Append("_");
+                    if (actor->GetParentActor()) {
+                        if (actor->GetRootComponent()->GetAttachParent()) {
+                            mesh_name.Append(actor->GetRootComponent()->GetAttachParent()->GetName());
+                            mesh_name.Append("_");
+                        }
+                        mesh_name.Append(actor->GetParentActor()->GetName());
+                    }
+                    else {
+                        mesh_name.Append(actor->GetName());
+                    }
+                }
+                if (USkinnedMeshComponent* skinnedmesh_component = Cast<USkinnedMeshComponent>(component)) {
+                    mesh_name = actor->GetName();
+                }
+                index++;
+            }
+            auto name = std::string(TCHAR_TO_UTF8(*mesh_name));
+            bool match = std::regex_match(name, compiledRegex);
+            if (match)
+                results.push_back(name);
+        }
     }
     return results;
 }

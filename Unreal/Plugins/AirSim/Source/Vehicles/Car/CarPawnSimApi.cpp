@@ -34,7 +34,7 @@ std::string CarPawnSimApi::getRecordFileLine(bool is_header_line) const
     std::string common_line = PawnSimApi::getRecordFileLine(is_header_line);
     if (is_header_line) {
         return common_line +
-               "Throttle\tSteering\tBrake\tGear\tHandbrake\tRPM\tSpeed\t";
+               "Throttle\tSteering\tBrake\tGear\tHandbrake\tRPM\tSpeed\tGPS_Lat\tGPS_Long\tGPS_Alt\tIMU_Acc_x\tIMU_Acc_y\tIMU_Acc_z\tLidar\t";
     }
 
     const auto& state = pawn_api_->getCarState();
@@ -43,6 +43,25 @@ std::string CarPawnSimApi::getRecordFileLine(bool is_header_line) const
     ss << common_line;
     ss << current_controls_.throttle << "\t" << current_controls_.steering << "\t" << current_controls_.brake << "\t";
     ss << state.gear << "\t" << state.handbrake << "\t" << state.rpm << "\t" << state.speed << "\t";
+
+
+    //Here you can adjust the gps data that has to be recorded
+    const auto& gps_data = vehicle_api_->getGpsData("");
+    ss << gps_data.gnss.geo_point.latitude << "\t" << gps_data.gnss.geo_point.longitude << "\t"
+        << gps_data.gnss.geo_point.altitude << "\t";
+
+
+    //Here you can adjust the IMU data that has to be recorded
+    const auto& imu_data = vehicle_api_->getImuData("");
+    ss << imu_data.linear_acceleration.x() << "\t" << imu_data.linear_acceleration.y() << "\t"
+        << imu_data.linear_acceleration.z() << "\t";
+
+    //Lidar information
+    const auto& lidar_data = vehicle_api_->getLidarData("");
+    for (const auto& point : lidar_data.point_cloud)
+    {
+        ss << point << "\t";
+    }
 
     return ss.str();
 }

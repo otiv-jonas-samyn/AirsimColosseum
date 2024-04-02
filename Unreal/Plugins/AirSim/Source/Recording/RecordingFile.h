@@ -12,7 +12,8 @@ class RecordingFile
 public:
     ~RecordingFile();
 
-    void appendRecord(const std::vector<msr::airlib::ImageCaptureBase::ImageResponse>& responses, msr::airlib::VehicleSimApiBase* vehicle_sim_api) const;
+    void appendRecord(const std::vector<msr::airlib::ImageCaptureBase::ImageResponse>& responses, msr::airlib::VehicleSimApiBase* vehicle_sim_api, int image_num) const;
+
     void appendColumnHeader(const std::string& header_columns);
     void startRecording(msr::airlib::VehicleSimApiBase* vehicle_sim_api, const std::string& folder = "");
     void stopRecording(bool ignore_if_stopped);
@@ -27,6 +28,11 @@ private:
 private:
     std::string record_filename = "airsim_rec";
     std::string image_path_;
+
+    std::string segmentation_path_;
+    std::string scene_path_;
+    std::string depth_path_;
+    
     bool is_recording_ = false;
     IFileHandle* log_file_handle_ = nullptr;
 };

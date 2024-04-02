@@ -204,9 +204,9 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("getDistanceSensorData", distance_sensor_name, vehicle_name).as<RpcLibAdaptorsBase::DistanceSensorData>().to();
         }
 
-        bool RpcLibClientBase::simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex)
+        bool RpcLibClientBase::simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex, int instanceID, bool is_Instanced)
         {
-            return pimpl_->client.call("simSetSegmentationObjectID", mesh_name, object_id, is_name_regex).as<bool>();
+            return pimpl_->client.call("simSetSegmentationObjectID", mesh_name, object_id, is_name_regex, instanceID, is_Instanced).as<bool>();
         }
         int RpcLibClientBase::simGetSegmentationObjectID(const std::string& mesh_name) const
         {
@@ -486,6 +486,18 @@ __pragma(warning(disable : 4239))
         vector<string> RpcLibClientBase::simListSceneObjects(const string& name_regex) const
         {
             return pimpl_->client.call("simListSceneObjects", name_regex).as<vector<string>>();
+        }
+
+        
+        vector<string> RpcLibClientBase::simListInstanceSegmentationObjects() const
+        {
+            return pimpl_->client.call("simListInstanceSegmentationObjects").as<vector<string>>();
+        }
+
+        vector<msr::airlib::Pose> RpcLibClientBase::simListInstanceSegmentationPoses(bool ned, bool only_visible) const
+        {
+            const auto& response_adaptor = pimpl_->client.call("simListInstanceSegmentationPoses", ned, only_visible).as<vector<RpcLibAdaptorsBase::Pose>>();
+            return RpcLibAdaptorsBase::Pose::to(response_adaptor);
         }
 
         std::vector<std::string> RpcLibClientBase::simSwapTextures(const std::string& tags, int tex_id, int component_id, int material_id)

@@ -48,7 +48,7 @@ namespace airlib
         virtual void enableWeather(bool enable) = 0;
         virtual void setWeatherParameter(WeatherParameter param, float val) = 0;
 
-        virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false) = 0;
+        virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false) = 0;
         virtual int getSegmentationObjectID(const std::string& mesh_name) const = 0;
 
         virtual bool addVehicle(const std::string& vehicle_name, const std::string& vehicle_type, const Pose& pose, const std::string& pawn_path = "") = 0;
@@ -67,6 +67,9 @@ namespace airlib
         virtual void simPlotTransformsWithNames(const vector<Pose>& poses, const vector<std::string>& names, float tf_scale, float tf_thickness, float text_scale, const vector<float>& text_color_rgba, float duration) = 0;
 
         virtual std::vector<std::string> listSceneObjects(const std::string& name_regex) const = 0;
+        virtual std::vector<std::string> listInstanceSegmentationObjects() const = 0;
+        virtual std::vector<Pose> listInstanceSegmentationPoses(bool ned = true, bool only_visible = false) const = 0;
+
         virtual Pose getObjectPose(const std::string& object_name) const = 0;
         virtual Vector3r getObjectScale(const std::string& object_name) const = 0;
         virtual bool setObjectPose(const std::string& object_name, const Pose& pose, bool teleport) = 0;

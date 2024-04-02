@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/OutputDeviceNull.h"
 #include "Engine/World.h"
+#include "ObjectPainter.h"
 
 #include <memory>
 #include "AirBlueprintLib.h"
@@ -17,6 +18,8 @@
 #include "common/EarthCelestial.hpp"
 #include "sensors/lidar/LidarSimple.hpp"
 #include "sensors/distance/DistanceSimple.hpp"
+
+#include "common/ImageCaptureBase.hpp"
 
 #include "Weather/WeatherLib.h"
 
@@ -40,6 +43,7 @@ ASimModeBase::ASimModeBase()
 
     static ConstructorHelpers::FClassFinder<APIPCamera> external_camera_class(TEXT("Blueprint'/AirSim/Blueprints/BP_PIPCamera'"));
     external_camera_class_ = external_camera_class.Succeeded() ? external_camera_class.Class : nullptr;
+
     static ConstructorHelpers::FClassFinder<ACameraDirector> camera_director_class(TEXT("Blueprint'/AirSim/Blueprints/BP_CameraDirector'"));
     camera_director_class_ = camera_director_class.Succeeded() ? camera_director_class.Class : nullptr;
 
@@ -153,6 +157,9 @@ void ASimModeBase::BeginPlay()
     }
     UAirBlueprintLib::GenerateActorMap(this, scene_object_map);
 
+
+    InitializeMeshVertexColorIDs();
+
     loading_screen_widget_->AddToViewport();
     loading_screen_widget_->SetVisibility(ESlateVisibility::Hidden);
 }
@@ -178,15 +185,144 @@ void ASimModeBase::checkVehicleReady()
     }
 }
 
+void ASimModeBase::InitializeMeshVertexColorIDs()
+{
+    UObjectPainter::Reset(this->GetLevel(), &nameToColorIndexMap_, &nameToComponentMap_, &ColorToNameMap_);
+}
+
 void ASimModeBase::setStencilIDs()
 {
-    UAirBlueprintLib::SetMeshNamingMethod(getSettings().segmentation_setting.mesh_naming_method);
-
-    if (getSettings().segmentation_setting.init_method ==
-        AirSimSettings::SegmentationSetting::InitMethodType::CommonObjectsRandomIDs) {
-        UAirBlueprintLib::InitializeMeshStencilIDs(getSettings().segmentation_setting.override_existing);
+    FString materialListContent;
+    if (FFileHelper::LoadFileToString(materialListContent, UTF8_TO_TCHAR(getSettings().material_list_file.c_str()))) 
+    {
+        UAirBlueprintLib::InitializeMeshStencilIDs(true, materialListContent);
     }
-    //else don't init
+    else 
+    {
+        UAirBlueprintLib::LogMessage("Cannot start stencil initialization. Material list was not found:",
+            UTF8_TO_TCHAR(getSettings().material_list_file.c_str()), LogDebugLevel::Failure);
+    }
+}
+
+std::vector<std::string> ASimModeBase::GetAllSegmentationMeshIDs() 
+{
+    std::vector<std::string> retval;
+    TMap<FString, uint32> nameToColorIndexMapTemp = nameToColorIndexMap_;
+    for (auto const& element : nameToColorIndexMapTemp) 
+    {
+        retval.emplace_back(std::string(TCHAR_TO_UTF8(*element.Key)));
+    }
+    return retval;
+}
+
+std::vector<msr::airlib::Pose> ASimModeBase::GetAllSegmentationMeshPoses(bool ned, bool only_visible) 
+{
+    std::vector<msr::airlib::Pose> retval;
+    TMap<FString, UMeshComponent*> nameToComponentMapTemp = nameToComponentMap_;
+    for (auto const& element : nameToComponentMapTemp) 
+    {
+        UAirBlueprintLib::RunCommandOnGameThread([ned, only_visible, &retval, element, this]() {
+            if (element.Value->HasBegunPlay() && element.Value->IsRenderStateCreated()) {
+                if (!element.Value->IsBeingDestroyed() && !element.Value->IsPendingKillOrUnreachable())
+                {
+                    if (!only_visible || element.Value->GetVisibleFlag()) 
+                    {
+                        if (ned) 
+                        {
+                            retval.emplace_back(getGlobalNedTransform().toGlobalNed(FTransform(element.Value->GetComponentRotation(), element.Value->GetComponentLocation())));
+                        }
+                        else 
+                        {
+                            retval.emplace_back(getGlobalNedTransform().toLocalNed(FTransform(element.Value->GetComponentRotation(), element.Value->GetComponentLocation())));
+                        }
+                    }
+                    else 
+                    {
+                        retval.emplace_back(msr::airlib::Pose::nanPose());
+                    }
+                }
+                else 
+                {
+                    retval.emplace_back(msr::airlib::Pose::nanPose());
+                }
+            }
+            else 
+            {
+                retval.emplace_back(msr::airlib::Pose::nanPose());
+            }
+        }, true);
+    }
+    return retval;
+}
+
+
+bool ASimModeBase::SetMeshVertexColorID(const std::string& mesh_name, int object_id, bool is_name_regex, int InstanceID, bool isInstanced) 
+{
+    if (is_name_regex) 
+    {
+        std::regex name_regex;
+        name_regex.assign(mesh_name, std::regex_constants::icase);
+        int changes = 0;
+        for (auto It = nameToComponentMap_.CreateConstIterator(); It; ++It)
+        {
+            if (std::regex_match(TCHAR_TO_UTF8(*It.Key()), name_regex)) 
+            {
+                bool success;
+                FString key = It.Key();
+                TMap<FString, uint32>* nameToColorIndexMap = &nameToColorIndexMap_;
+                TMap<FString, UMeshComponent*> nameToComponentMap = nameToComponentMap_;
+                TMap<FString, FString>* colorToNameMap = &ColorToNameMap_;
+                UAirBlueprintLib::RunCommandOnGameThread([key, object_id, nameToColorIndexMap, nameToComponentMap, colorToNameMap, &success, InstanceID, isInstanced]() {
+
+                    if (isInstanced)
+                    {
+                        success = UObjectPainter::SetComponentColor(key, object_id, InstanceID, nameToColorIndexMap, nameToComponentMap, colorToNameMap);
+                    }
+                    else 
+                    {
+                        success = UObjectPainter::SetComponentColor(key, object_id, nameToColorIndexMap, nameToComponentMap, colorToNameMap);
+                    }
+
+                    }, true);
+                changes++;
+            }
+        }
+        return changes > 0;
+    }
+    else if (nameToComponentMap_.Contains(mesh_name.c_str())) 
+    {
+        bool success;
+        FString key = mesh_name.c_str();
+        TMap<FString, uint32>* nameToColorIndexMap = &nameToColorIndexMap_;
+        TMap<FString, UMeshComponent*> nameToComponentMap = nameToComponentMap_;
+        TMap<FString, FString>* colorToNameMap = &ColorToNameMap_;
+        UAirBlueprintLib::RunCommandOnGameThread([key, object_id, nameToColorIndexMap, nameToComponentMap, colorToNameMap, &success, InstanceID, isInstanced]() {
+
+            if (isInstanced) 
+            {
+                success = UObjectPainter::SetComponentColor(key, object_id, InstanceID, nameToColorIndexMap, nameToComponentMap, colorToNameMap);
+            }
+            else 
+            {
+                success = UObjectPainter::SetComponentColor(key, object_id, nameToColorIndexMap, nameToComponentMap, colorToNameMap);
+            }
+
+            }, true);
+        return success;
+    }
+    else 
+    {
+        return false;
+    }
+}
+
+int ASimModeBase::GetMeshVertexColorID(const std::string& mesh_name) {
+    return UObjectPainter::GetComponentColor(mesh_name.c_str(), nameToColorIndexMap_);
+}
+
+bool ASimModeBase::AddNewActorToSegmentation(AActor* Actor)
+{
+    return UObjectPainter::PaintNewActor(Actor, &nameToColorIndexMap_, &nameToComponentMap_, &ColorToNameMap_);
 }
 
 void ASimModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -475,7 +611,8 @@ void ASimModeBase::initializeExternalCameras()
     const auto& transform = getGlobalNedTransform();
 
     //for each camera in settings
-    for (const auto& camera_setting_pair : getSettings().external_cameras) {
+    for (const auto& camera_setting_pair : getSettings().external_cameras) 
+    {
         const auto& setting = camera_setting_pair.second;
 
         //get pose
@@ -648,6 +785,7 @@ std::unique_ptr<PawnSimApi> ASimModeBase::createVehicleApi(APawn* vehicle_pawn)
 
     PawnSimApi::Params pawn_sim_api_params(vehicle_pawn, &getGlobalNedTransform(), getVehiclePawnEvents(vehicle_pawn), getVehiclePawnCameras(vehicle_pawn), pip_camera_class, collision_display_template, home_geopoint, vehicle_name);
 
+
     std::unique_ptr<PawnSimApi> vehicle_sim_api = createVehicleSimApi(pawn_sim_api_params);
     auto vehicle_sim_api_p = vehicle_sim_api.get();
     auto vehicle_api = getVehicleApi(pawn_sim_api_params, vehicle_sim_api_p);
@@ -739,7 +877,9 @@ void ASimModeBase::setupVehiclesAndCamera()
 
     // Create External Cameras
     initializeExternalCameras();
+    //external_image_capture_ = std::make_unique<UnrealImageCapture>(&external_cameras_, &_external_segmentation_cameras_);
     external_image_capture_ = std::make_unique<UnrealImageCapture>(&external_cameras_);
+
 
     if (getApiProvider()->hasDefaultVehicle()) {
         //TODO: better handle no FPV vehicles scenario
@@ -787,6 +927,16 @@ const common_utils::UniqueValueMap<std::string, APIPCamera*> ASimModeBase::getVe
     //derived class should override this method to retrieve types of pawns they support
     return common_utils::UniqueValueMap<std::string, APIPCamera*>();
 }
+
+/*
+const common_utils::UniqueValueMap<std::string, ASegmentationCamera*> ASimModeBase::getVehiclePawnSegmentationCameras(APawn* pawn) const
+{
+    unused(pawn);
+
+	return _external_segmentation_cameras_;
+}
+*/
+
 void ASimModeBase::initializeVehiclePawn(APawn* pawn)
 {
     unused(pawn);

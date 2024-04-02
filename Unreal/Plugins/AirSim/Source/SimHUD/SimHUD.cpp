@@ -331,10 +331,16 @@ FString ASimHUD::getLaunchPath(const std::string& filename)
 
 bool ASimHUD::getSettingsText(std::string& settingsText)
 {
+    FString otivDesiredPath = FPaths::ProjectDir() / TEXT("JSON/settings.json");
+
     return (getSettingsTextFromCommandLine(settingsText) ||
-            readSettingsTextFromFile(FString(msr::airlib::Settings::getExecutableFullPath("settings.json").c_str()), settingsText) ||
-            readSettingsTextFromFile(getLaunchPath("settings.json"), settingsText) ||
-            readSettingsTextFromFile(FString(msr::airlib::Settings::Settings::getUserDirectoryFullPath("settings.json").c_str()), settingsText));
+        readSettingsTextFromFile(otivDesiredPath, settingsText) ||
+        readSettingsTextFromFile(FString(msr::airlib::Settings::getExecutableFullPath("JSON/settings.json").c_str()), settingsText) ||
+        readSettingsTextFromFile(FString(msr::airlib::Settings::getExecutableFullPath("settings.json").c_str()), settingsText) ||
+        readSettingsTextFromFile(getLaunchPath("JSON/settings.json"), settingsText) ||
+        readSettingsTextFromFile(getLaunchPath("settings.json"), settingsText)
+        );
+        // || readSettingsTextFromFile(FString(msr::airlib::Settings::Settings::getUserDirectoryFullPath("settings.json").c_str()), settingsText));
 }
 
 // Attempts to parse the settings file path or the settings text from the command line

@@ -6,6 +6,8 @@
 #include "Engine/World.h"
 #include "ImageUtils.h"
 
+#include "ObjectPainter.h"
+
 #include <string>
 #include <exception>
 #include "AirBlueprintLib.h"
@@ -16,7 +18,8 @@ APIPCamera::APIPCamera(const FObjectInitializer& ObjectInitializer)
                 .SetDefaultSubobjectClass<UCineCameraComponent>(TEXT("CameraComponent")))
 {
     static ConstructorHelpers::FObjectFinder<UMaterial> mat_finder(TEXT("Material'/AirSim/HUDAssets/CameraSensorNoise.CameraSensorNoise'"));
-    if (mat_finder.Succeeded()) {
+    if (mat_finder.Succeeded()) 
+    {
         noise_material_static_ = mat_finder.Object;
     }
     else
@@ -25,7 +28,8 @@ APIPCamera::APIPCamera(const FObjectInitializer& ObjectInitializer)
                                            LogDebugLevel::Failure);
 
     static ConstructorHelpers::FObjectFinder<UMaterial> dist_mat_finder(TEXT("Material'/AirSim/HUDAssets/CameraDistortion.CameraDistortion'"));
-    if (dist_mat_finder.Succeeded()) {
+    if (dist_mat_finder.Succeeded()) 
+    {
         distortion_material_static_ = dist_mat_finder.Object;
         distortion_param_collection_ = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), NULL, TEXT("'/AirSim/HUDAssets/DistortionParams.DistortionParams'")));
     }
@@ -36,16 +40,16 @@ APIPCamera::APIPCamera(const FObjectInitializer& ObjectInitializer)
 
     PrimaryActorTick.bCanEverTick = true;
 
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Scene), EPixelFormat::PF_B8G8R8A8);
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthPlanar), EPixelFormat::PF_DepthStencil); // not used. init_auto_format is called in setupCameraFromSettings()
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthPerspective), EPixelFormat::PF_DepthStencil); // not used for same reason as above
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthVis), EPixelFormat::PF_DepthStencil); // not used for same reason as above
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DisparityNormalized), EPixelFormat::PF_DepthStencil); // not used for same reason as above
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Segmentation), EPixelFormat::PF_B8G8R8A8);
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::SurfaceNormals), EPixelFormat::PF_B8G8R8A8);
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Infrared), EPixelFormat::PF_B8G8R8A8);
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::OpticalFlow), EPixelFormat::PF_B8G8R8A8);
-    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::OpticalFlowVis), EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Scene),                 EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthPlanar),           EPixelFormat::PF_DepthStencil); // not used. init_auto_format is called in setupCameraFromSettings()
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthPerspective),      EPixelFormat::PF_DepthStencil); // not used for same reason as above
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DepthVis),              EPixelFormat::PF_DepthStencil); // not used for same reason as above
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::DisparityNormalized),   EPixelFormat::PF_DepthStencil); // not used for same reason as above
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Segmentation),          EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::SurfaceNormals),        EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::Infrared),              EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::OpticalFlow),           EPixelFormat::PF_B8G8R8A8);
+    image_type_to_pixel_format_map_.Add(Utils::toNumeric(ImageType::OpticalFlowVis),        EPixelFormat::PF_B8G8R8A8);
 
     object_filter_ = FObjectFilter();
 }
@@ -89,8 +93,11 @@ void APIPCamera::PostInitializeComponents()
             detections_[i]->Deactivate();
         }
     }
+    
     //set initial focal length
     camera_->CurrentFocalLength = 11.9;
+
+    UObjectPainter::SetViewForVertexColor(captures_[Utils::toNumeric(ImageType::Segmentation)]->ShowFlags);
 }
 
 void APIPCamera::BeginPlay()
@@ -103,7 +110,8 @@ void APIPCamera::BeginPlay()
     //by default all image types are disabled
     camera_type_enabled_.assign(imageTypeCount(), false);
 
-    for (unsigned int image_type = 0; image_type < imageTypeCount(); ++image_type) {
+    for (unsigned int image_type = 0; image_type < imageTypeCount(); ++image_type) 
+    {
         //use final color for all calculations
         captures_[image_type]->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 
@@ -459,7 +467,11 @@ void APIPCamera::updateCameraSetting(UCineCameraComponent* camera, const Capture
 
 msr::airlib::Pose APIPCamera::getPose() const
 {
-    return ned_transform_->toLocalNed(this->GetActorTransform());
+    if (ned_transform_)
+    {
+        return ned_transform_->toLocalNed(this->GetActorTransform());
+    }
+    return msr::airlib::Pose();
 }
 
 void APIPCamera::updateCameraPostProcessingSetting(FPostProcessSettings& obj, const CaptureSetting& setting)
@@ -598,7 +610,8 @@ USceneCaptureComponent2D* APIPCamera::getCaptureComponent(const APIPCamera::Imag
 
 void APIPCamera::disableAllPIP()
 {
-    for (unsigned int image_type = 0; image_type < imageTypeCount(); ++image_type) {
+    for (unsigned int image_type = 0; image_type < imageTypeCount(); ++image_type) 
+    {
         enableCaptureComponent(Utils::toEnum<ImageType>(image_type), false);
     }
 }

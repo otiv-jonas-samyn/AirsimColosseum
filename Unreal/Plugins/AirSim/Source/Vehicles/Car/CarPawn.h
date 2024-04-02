@@ -15,6 +15,7 @@
 #include "common/common_utils/Signal.hpp"
 #include "common/common_utils/UniqueValueMap.hpp"
 #include "PawnEvents.h"
+
 #include "PIPCamera.h"
 
 #include "CarPawn.generated.h"
@@ -43,6 +44,7 @@ public:
     //interface
     void initializeForBeginPlay(bool engine_sound);
     const common_utils::UniqueValueMap<std::string, APIPCamera*> getCameras() const;
+
     PawnEvents* getPawnEvents()
     {
         return &pawn_events_;
@@ -72,7 +74,7 @@ private:
     typedef msr::airlib::AirSimSettings AirSimSettings;
 
     UClass* pip_camera_class_;
-
+  
     PawnEvents pawn_events_;
 
     bool is_low_friction_;
