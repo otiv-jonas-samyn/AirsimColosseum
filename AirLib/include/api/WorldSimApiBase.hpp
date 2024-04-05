@@ -48,6 +48,7 @@ namespace airlib
         virtual void enableWeather(bool enable) = 0;
         virtual void setWeatherParameter(WeatherParameter param, float val) = 0;
 
+        virtual void InitializeSegmentation() = 0;
         virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false) = 0;
         virtual int getSegmentationObjectID(const std::string& mesh_name) const = 0;
 

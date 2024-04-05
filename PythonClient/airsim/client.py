@@ -556,6 +556,7 @@ class VehicleClient:
         return self.client.call('simListSceneObjects', name_regex)
 
     
+    
     def simListInstanceSegmentationObjects(self):
         return self.client.call('simListInstanceSegmentationObjects')
 
@@ -613,6 +614,10 @@ class VehicleClient:
             bool: True if object is queued up for removal
         """
         return self.client.call('simDestroyObject', object_name)
+
+
+    def simInitializeSegmentation(self):
+        self.client.call('simInitializeSegmentation')
 
     def simSetSegmentationObjectID(self, mesh_name, object_id, is_name_regex = False, instanceID = 0, is_instanced = False):
         """

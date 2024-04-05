@@ -75,6 +75,8 @@ public:
     virtual void stopRecording();
     virtual bool isRecording() const;
 
+    virtual void InitializeMeshVertexColorIDs();
+
     virtual void toggleTraceAll();
 
     void startApiServer();
@@ -248,7 +250,6 @@ private:
     static ASimModeBase* SIMMODE;
 
 private:
-    void InitializeMeshVertexColorIDs();
     void setStencilIDs();
 
     void initializeTimeOfDay();

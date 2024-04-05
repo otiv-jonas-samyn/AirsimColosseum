@@ -254,6 +254,10 @@ namespace airlib
             return RpcLibAdaptorsBase::Pose(pose);
         });
 
+        pimpl_->server.bind("simInitializeSegmentation", [&]() -> void {
+            getWorldSimApi()->InitializeSegmentation();
+        });
+
         pimpl_->server.bind("simSetTraceLine", [&](const std::vector<float>& color_rgba, float thickness, const std::string& vehicle_name) -> void {
             getVehicleSimApi(vehicle_name)->setTraceLine(color_rgba, thickness);
         });
