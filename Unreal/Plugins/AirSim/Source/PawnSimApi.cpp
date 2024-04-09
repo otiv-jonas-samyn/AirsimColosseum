@@ -133,7 +133,14 @@ void PawnSimApi::createCamerasFromSettings()
         const auto& setting = camera_setting_pair.second;
 
         //get pose
-        FVector position = transform.fromLocalNed(setting.position) - transform.fromLocalNed(Vector3r::Zero());
+        FVector rangedOffset    = transform.fromLocalNed(setting.positionOffsetRange) - transform.fromLocalNed(Vector3r::Zero());
+        FVector position        = transform.fromLocalNed(setting.position) - transform.fromLocalNed(Vector3r::Zero());
+
+        //Randomly offset the camera position within the range
+        position.X += FMath::RandRange(-rangedOffset.X, rangedOffset.X);
+        position.Y += FMath::RandRange(-rangedOffset.Y, rangedOffset.Y);
+        position.Z += FMath::RandRange(-rangedOffset.Z, rangedOffset.Z);
+
         FTransform camera_transform(FRotator(setting.rotation.pitch, setting.rotation.yaw, setting.rotation.roll),
                                     position,
                                     FVector(1., 1., 1.));
