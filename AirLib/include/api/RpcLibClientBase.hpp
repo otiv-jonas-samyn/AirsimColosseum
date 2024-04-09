@@ -161,6 +161,7 @@ namespace airlib
         bool simSetObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0);
 
         // Recording APIs
+        void singleRecording(); //This will record all camera's ones and stop
         void startRecording();
         void stopRecording();
         bool isRecording();

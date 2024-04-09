@@ -22,8 +22,15 @@ FRecordingThread::FRecordingThread()
 }
 
 void FRecordingThread::startRecording(const RecordingSetting& settings,
-                                      const common_utils::UniqueValueMap<std::string, VehicleSimApiBase*>& vehicle_sim_apis)
+                                      const common_utils::UniqueValueMap<std::string, VehicleSimApiBase*>& vehicle_sim_apis,
+                                      const bool repeatUntillStopped)
 {
+    if (running_instance_) {
+        //Resume the running instance
+        running_instance_->Resume();
+        return;
+    }
+
     stopRecording();
 
     //TODO: check FPlatformProcess::SupportsMultithreading()?
@@ -46,10 +53,12 @@ void FRecordingThread::startRecording(const RecordingSetting& settings,
     running_instance_->last_screenshot_on_ = 0;
 
     running_instance_->recording_file_.reset(new RecordingFile());
+    
     // Just need any 1 instance, to set the header line of the record file
     running_instance_->recording_file_->startRecording(*(vehicle_sim_apis.begin()), settings.folder);
 
     // Set is_ready at the end, setting this before can cause a race when the file isn't open yet
+    running_instance_->run_untill_stopped_ = repeatUntillStopped;
     running_instance_->is_ready_ = true;
 }
 
@@ -65,7 +74,10 @@ void FRecordingThread::init()
 
 bool FRecordingThread::isRecording()
 {
-    return running_instance_ != nullptr;
+    if (running_instance_) {
+        return !running_instance_->isPaused();
+    }
+    return false;
 }
 
 void FRecordingThread::stopRecording()
@@ -120,8 +132,11 @@ uint32 FRecordingThread::Run()
         {
             bool interval_elapsed = msr::airlib::ClockFactory::get()->elapsedSince(last_screenshot_on_) > settings_.record_interval;
 
-            if (interval_elapsed) 
+            if (interval_elapsed || run_untill_stopped_ == false) 
             {
+                std::unique_lock<std::mutex> lock(pause_mutex_);
+                pauseCondition.wait(lock, [this] { return !bPaused.load(); });
+
                 last_screenshot_on_ = msr::airlib::ClockFactory::get()->nowNanos();
 
                 for (const auto& vehicle_sim_api : vehicle_sim_apis_) 
@@ -142,6 +157,12 @@ uint32 FRecordingThread::Run()
                     }
                 }
                 image_Count_++;
+
+                if (run_untill_stopped_ == false)
+                {
+                    //Pause thread
+                    Pause();
+                }
             }
         }
     }
@@ -149,6 +170,25 @@ uint32 FRecordingThread::Run()
     recording_file_.reset();
 
     return 0;
+}
+
+void FRecordingThread::Pause()
+{
+    running_instance_->bPaused = true;
+}
+
+bool FRecordingThread::isPaused() const
+{
+    return bPaused.load();
+}
+
+void FRecordingThread::Resume()
+{
+    {
+        std::lock_guard<std::mutex> lock(running_instance_->pause_mutex_);
+        running_instance_->bPaused = false;
+    }
+    running_instance_->pauseCondition.notify_one();
 }
 
 void FRecordingThread::Stop()

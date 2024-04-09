@@ -713,6 +713,11 @@ std::vector<WorldSimApi::MeshPositionVertexBuffersResponse> WorldSimApi::getMesh
 }
 
 // Recording APIs
+void WorldSimApi::singleRecording()
+{
+	simmode_->singleRecording();
+}
+
 void WorldSimApi::startRecording()
 {
     simmode_->startRecording();

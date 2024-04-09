@@ -1048,6 +1048,14 @@ class VehicleClient:
         self.client.call('cancelLastTask', vehicle_name)
 
 #Recording APIs
+    def singleRecording(self):
+        """
+        Single Recording
+
+        Recording will be done according to the settings and stop after a single recording
+        """
+        self.client.call('singleRecording')
+
     def startRecording(self):
         """
         Start Recording

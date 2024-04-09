@@ -497,6 +497,11 @@ namespace airlib
             return getWorldSimApi()->setObjectMaterialFromTexture(object_name, texture_path, component_id);
         });
 
+        //This will record all camera's ones and stop
+        pimpl_->server.bind("singleRecording", [&]() -> void {
+            getWorldSimApi()->singleRecording();
+        });
+
         pimpl_->server.bind("startRecording", [&]() -> void {
             getWorldSimApi()->startRecording();
         });

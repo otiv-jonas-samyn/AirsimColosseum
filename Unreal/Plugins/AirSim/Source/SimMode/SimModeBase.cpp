@@ -642,6 +642,11 @@ bool ASimModeBase::toggleRecording()
     return isRecording();
 }
 
+void ASimModeBase::singleRecording()
+{
+    FRecordingThread::startRecording(getSettings().recording_setting, getApiProvider()->getVehicleSimApis(), false);
+}
+
 void ASimModeBase::stopRecording()
 {
     FRecordingThread::stopRecording();

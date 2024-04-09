@@ -621,6 +621,11 @@ __pragma(warning(disable : 4239))
             return this;
         }
 
+        void RpcLibClientBase::singleRecording()
+        {
+			pimpl_->client.call("singleRecording");
+		}
+
         void RpcLibClientBase::startRecording()
         {
             pimpl_->client.call("startRecording");
