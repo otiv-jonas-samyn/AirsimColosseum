@@ -274,6 +274,10 @@ __pragma(warning(disable : 4239))
         vector<uint8_t> RpcLibClientBase::simGetImage(const std::string& camera_name, ImageCaptureBase::ImageType type, const std::string& vehicle_name, bool external)
         {
             vector<uint8_t> result = pimpl_->client.call("simGetImage", camera_name, type, vehicle_name, external).as<vector<uint8_t>>();
+            if (result.size() == 1)
+            {
+				result.clear();
+			}
             return result;
         }
 
