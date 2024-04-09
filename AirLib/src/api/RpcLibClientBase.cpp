@@ -621,6 +621,16 @@ __pragma(warning(disable : 4239))
             return this;
         }
 
+        std::string RpcLibClientBase::getRecordingFolder() const
+        {
+            return pimpl_->client.call("getRecordingFolder").as<std::string>();
+        }
+
+        void RpcLibClientBase::setRecordingPath(const std::string& path)
+		{
+			pimpl_->client.call("setRecordingPath", path);
+		}
+
         void RpcLibClientBase::singleRecording()
         {
 			pimpl_->client.call("singleRecording");

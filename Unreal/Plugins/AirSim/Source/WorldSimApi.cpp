@@ -713,6 +713,20 @@ std::vector<WorldSimApi::MeshPositionVertexBuffersResponse> WorldSimApi::getMesh
 }
 
 // Recording APIs
+
+std::string WorldSimApi::getRecordingFolder() const 
+{
+    std::string folder = AirSimSettings::singleton().recording_setting.folder;
+    std::string log_folderpath = common_utils::FileSystem::getLogFolderPath(true, folder);
+
+    return log_folderpath;
+}
+
+void WorldSimApi::setRecordingFolder(const std::string& path)
+{
+	simmode_->setRecordingFolder(path);
+}
+
 void WorldSimApi::singleRecording()
 {
 	simmode_->singleRecording();

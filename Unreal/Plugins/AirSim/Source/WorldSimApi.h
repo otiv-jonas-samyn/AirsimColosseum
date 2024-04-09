@@ -75,6 +75,8 @@ public:
     virtual std::vector<MeshPositionVertexBuffersResponse> getMeshPositionVertexBuffers() const override;
 
     // Recording APIs
+    virtual std::string getRecordingFolder() const override;
+    virtual void setRecordingFolder(const std::string& path) override;
     virtual void singleRecording() override;
     virtual void startRecording() override;
     virtual void stopRecording() override;

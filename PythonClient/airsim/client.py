@@ -1048,6 +1048,25 @@ class VehicleClient:
         self.client.call('cancelLastTask', vehicle_name)
 
 #Recording APIs
+    def getRecordingFolder(self):
+        """
+        Get the folder where recordings will be saved
+
+        Returns:
+            str: Folder path where recordings will be saved
+        """
+        return self.client.call('getRecordingFolder')
+
+    def setRecordingFolder(self, folder):
+        """
+        Set the folder where recordings will be saved
+
+        Args:
+            folder (str): Desired folder path
+        """
+        self.client.call('setRecordingFolder', folder)
+
+
     def singleRecording(self):
         """
         Single Recording

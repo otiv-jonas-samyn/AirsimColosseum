@@ -497,6 +497,15 @@ namespace airlib
             return getWorldSimApi()->setObjectMaterialFromTexture(object_name, texture_path, component_id);
         });
 
+        pimpl_->server.bind("getRecordingFolder", [&]() -> std::string {
+            return getWorldSimApi()->getRecordingFolder();
+        });
+
+        //This will set the folder where the recording will be saved
+        pimpl_->server.bind("setRecordingFolder", [&](const std::string& path) -> void {
+            getWorldSimApi()->setRecordingFolder(path);
+        });
+
         //This will record all camera's ones and stop
         pimpl_->server.bind("singleRecording", [&]() -> void {
             getWorldSimApi()->singleRecording();

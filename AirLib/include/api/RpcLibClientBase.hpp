@@ -137,6 +137,7 @@ namespace airlib
         void simEnableFocusPlane(const bool enable, const std::string& camera_name, const std::string& vehicle_name = "", bool external = false);
         std::string simGetCurrentFieldOfView(const std::string& camera_name, const std::string& vehicle_name = "", bool external = false);
         //end CinemAirSim
+        
         bool simTestLineOfSightToPoint(const msr::airlib::GeoPoint& point, const std::string& vehicle_name = "");
         bool simTestLineOfSightBetweenPoints(const msr::airlib::GeoPoint& point1, const msr::airlib::GeoPoint& point2);
         vector<msr::airlib::GeoPoint> simGetWorldExtents();
@@ -161,6 +162,9 @@ namespace airlib
         bool simSetObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0);
 
         // Recording APIs
+        std::string getRecordingFolder() const;
+        void setRecordingPath(const std::string& path);
+
         void singleRecording(); //This will record all camera's ones and stop
         void startRecording();
         void stopRecording();
