@@ -76,6 +76,8 @@ namespace airlib
         void cancelLastTask(const std::string& vehicle_name = "");
         virtual RpcLibClientBase* waitOnLastTask(bool* task_result = nullptr, float timeout_sec = Utils::nan<float>());
 
+        void simInitializeSegmentation();
+
         bool simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false);
         int simGetSegmentationObjectID(const std::string& mesh_name) const;
         void simPrintLogMessage(const std::string& message, std::string message_param = "", unsigned char severity = 0);
@@ -135,6 +137,7 @@ namespace airlib
         void simEnableFocusPlane(const bool enable, const std::string& camera_name, const std::string& vehicle_name = "", bool external = false);
         std::string simGetCurrentFieldOfView(const std::string& camera_name, const std::string& vehicle_name = "", bool external = false);
         //end CinemAirSim
+        
         bool simTestLineOfSightToPoint(const msr::airlib::GeoPoint& point, const std::string& vehicle_name = "");
         bool simTestLineOfSightBetweenPoints(const msr::airlib::GeoPoint& point1, const msr::airlib::GeoPoint& point2);
         vector<msr::airlib::GeoPoint> simGetWorldExtents();
@@ -159,6 +162,10 @@ namespace airlib
         bool simSetObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0);
 
         // Recording APIs
+        std::string getRecordingFolder() const;
+        void setRecordingPath(const std::string& path);
+
+        void singleRecording(); //This will record all camera's ones and stop
         void startRecording();
         void stopRecording();
         bool isRecording();

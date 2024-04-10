@@ -42,5 +42,4 @@ public:
 
 	static int GammaCorrectionTable[256];
 
-
 };

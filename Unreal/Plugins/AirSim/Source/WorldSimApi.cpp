@@ -302,6 +302,13 @@ bool WorldSimApi::addVehicle(const std::string& vehicle_name, const std::string&
     return result;
 }
 
+void WorldSimApi::InitializeSegmentation()
+{
+    UAirBlueprintLib::RunCommandOnGameThread([this]() {
+		simmode_->InitializeMeshVertexColorIDs();
+	}, true);
+}
+
 bool WorldSimApi::setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex, int instanceID, bool isInstanced)
 {
     return simmode_->SetMeshVertexColorID(mesh_name, object_id, is_name_regex, instanceID, isInstanced);
@@ -706,6 +713,25 @@ std::vector<WorldSimApi::MeshPositionVertexBuffersResponse> WorldSimApi::getMesh
 }
 
 // Recording APIs
+
+std::string WorldSimApi::getRecordingFolder() const 
+{
+    std::string folder = AirSimSettings::singleton().recording_setting.folder;
+    std::string log_folderpath = common_utils::FileSystem::getLogFolderPath(true, folder);
+
+    return log_folderpath;
+}
+
+void WorldSimApi::setRecordingFolder(const std::string& path)
+{
+	simmode_->setRecordingFolder(path);
+}
+
+void WorldSimApi::singleRecording()
+{
+	simmode_->singleRecording();
+}
+
 void WorldSimApi::startRecording()
 {
     simmode_->startRecording();

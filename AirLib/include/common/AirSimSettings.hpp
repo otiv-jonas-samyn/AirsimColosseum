@@ -199,6 +199,7 @@ namespace airlib
         {
             //nan means keep the default values set in components
             Vector3r position = VectorMath::nanVector();
+            Vector3r positionOffsetRange = VectorMath::nanVector();
             Rotation rotation = Rotation::nanRotation();
 
             GimbalSetting gimbal;
@@ -517,6 +518,14 @@ namespace airlib
                             settings_json.getFloat("Y", default_vec.y()),
                             settings_json.getFloat("Z", default_vec.z()));
         }
+
+        static Vector3r createRangeOffsetVectorSetting(const Settings& settings_json, const Vector3r& default_vec)
+        {
+            return Vector3r(settings_json.getFloat("RangeOffset_X", default_vec.x()),
+                            settings_json.getFloat("RangeOffset_Y", default_vec.y()),
+                            settings_json.getFloat("RangeOffset_Z", default_vec.z()));
+        }
+
         static Rotation createRotationSetting(const Settings& settings_json, const Rotation& default_rot)
         {
             return Rotation(settings_json.getFloat("Yaw", default_rot.yaw),
@@ -1090,8 +1099,9 @@ namespace airlib
         {
             CameraSetting setting = camera_defaults;
 
-            setting.position = createVectorSetting(settings_json, setting.position);
-            setting.rotation = createRotationSetting(settings_json, setting.rotation);
+            setting.position                = createVectorSetting(settings_json, setting.position);
+            setting.positionOffsetRange     = createRangeOffsetVectorSetting(settings_json, setting.positionOffsetRange);
+            setting.rotation                = createRotationSetting(settings_json, setting.rotation);
 
             loadCaptureSettings(settings_json, setting.capture_settings);
             loadNoiseSettings(settings_json, setting.noise_settings);
@@ -1110,11 +1120,13 @@ namespace airlib
             cameras.clear();
 
             Settings json_parent;
-            if (settings_json.getChild("Cameras", json_parent)) {
+            if (settings_json.getChild("Cameras", json_parent)) 
+            {
                 std::vector<std::string> keys;
                 json_parent.getChildNames(keys);
 
-                for (const auto& key : keys) {
+                for (const auto& key : keys) 
+                {
                     msr::airlib::Settings child;
                     json_parent.getChild(key, child);
                     cameras[key] = createCameraSetting(child, camera_defaults);

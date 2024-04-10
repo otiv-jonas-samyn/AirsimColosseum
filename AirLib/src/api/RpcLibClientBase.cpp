@@ -204,6 +204,11 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("getDistanceSensorData", distance_sensor_name, vehicle_name).as<RpcLibAdaptorsBase::DistanceSensorData>().to();
         }
 
+        void RpcLibClientBase::simInitializeSegmentation()
+        {
+            pimpl_->client.call("simInitializeSegmentation");
+        }
+
         bool RpcLibClientBase::simSetSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex, int instanceID, bool is_Instanced)
         {
             return pimpl_->client.call("simSetSegmentationObjectID", mesh_name, object_id, is_name_regex, instanceID, is_Instanced).as<bool>();
@@ -269,6 +274,10 @@ __pragma(warning(disable : 4239))
         vector<uint8_t> RpcLibClientBase::simGetImage(const std::string& camera_name, ImageCaptureBase::ImageType type, const std::string& vehicle_name, bool external)
         {
             vector<uint8_t> result = pimpl_->client.call("simGetImage", camera_name, type, vehicle_name, external).as<vector<uint8_t>>();
+            if (result.size() == 1)
+            {
+				result.clear();
+			}
             return result;
         }
 
@@ -611,6 +620,21 @@ __pragma(warning(disable : 4239))
 
             return this;
         }
+
+        std::string RpcLibClientBase::getRecordingFolder() const
+        {
+            return pimpl_->client.call("getRecordingFolder").as<std::string>();
+        }
+
+        void RpcLibClientBase::setRecordingPath(const std::string& path)
+		{
+			pimpl_->client.call("setRecordingPath", path);
+		}
+
+        void RpcLibClientBase::singleRecording()
+        {
+			pimpl_->client.call("singleRecording");
+		}
 
         void RpcLibClientBase::startRecording()
         {

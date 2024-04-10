@@ -18,8 +18,8 @@ cameraTypeMap = {
     "normals": airsim.ImageType.SurfaceNormals
 }
 
-CAM_NAME = "front_center"
-DEBUG = False
+CAM_NAME = "CameraMiddle"
+DEBUG = True
 
 def saveImage(response, filename):
     if response.pixels_as_float:
@@ -42,8 +42,8 @@ class ImageBenchmarker():
     def __init__(self,
             img_benchmark_type = 'simGetImages',
             viz_image_cv2 = False,
-            save_images = False,
-            img_type = "scene"):
+            save_images = True,
+            img_type = "depth"):
         self.airsim_client = airsim.VehicleClient()
         self.airsim_client.confirmConnection()
         self.image_benchmark_num_images = 0
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument('--img_benchmark_type', type=str, choices=["simGetImage", "simGetImages"], default="simGetImages")
     parser.add_argument('--enable_viz_image_cv2', dest='viz_image_cv2', action='store_true', default=False)
     parser.add_argument('--save_images', dest='save_images', action='store_true', default=False)
-    parser.add_argument('--img_type', type=str, choices=cameraTypeMap.keys(), default="scene")
+    parser.add_argument('--img_type', type=str, choices=cameraTypeMap.keys(), default="depth")
     parser.add_argument('--time', help="Time in secs to run the benchmark for", type=int, default=30)
 
     args = parser.parse_args()

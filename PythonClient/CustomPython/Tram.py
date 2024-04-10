@@ -23,15 +23,26 @@ from threading import Thread
 import threading
 
 # --- import for Ascii art ---
-# --- import for Ascii art --- 
 from termcolor import colored
 import pyfiglet
 
+# --- import other ---
+from enum import Enum
+
+# ====================================================================================================
+
+class outputType(Enum):
+    DATA            = -1,
+    SCENE           = 0
+    DEPTH           = 2
+    SEGMENTATION    = 5
 
 # ====================================================================================================
 
 MIN_DEPTH_METERS = 0
 MAX_DEPTH_METERS = 100
+
+IMAGE_INTERVAL   = 0.2
 
 outputfolder = ""
 
@@ -105,16 +116,13 @@ def UpdateInstanceSegmentation(AirsimClient):
     currentObjectList = AirsimClient.simListInstanceSegmentationObjects()
 
     # Sort the objects from the list by class defined in the CSV and keep them in a dictionary with classname as key
-    #print("Sorting objects based on segmentation.csv into classes...")
     with open('segmentation.csv', encoding='utf-8-sig') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         index = 0
         classObjectMap = {}
         for idx, row in enumerate(csv_reader, start=1):
             classItems = [i for i in currentObjectList if i.startswith(row[0])]
-            #print("Found " + str(len(classItems)) + " objects starting with object-name '" + str(row[0]) + "'")
             classObjectMap[row[0]] = classItems
-    #print("Sorted objects based on segmentation.csv into classes\n")
 
     # Set the colors for all walls to a chosen color with color index 15
     InstanceMap =   { 
@@ -136,13 +144,16 @@ def UpdateInstanceSegmentation(AirsimClient):
     print("Instance segmentation updated\n")
 
 # Get the output folder for the images
-def GetOutputFolder(imageType = -1, timestamp = 0):
+def GetOutputFolder(Airsimclient, imageType = outputType.DATA, timestamp = 0):
     global outputfolder
 
     # Create a folder with the timestamp
     if outputfolder == "":
-        outputfolder = f"Output_{ timestamp }"
-        
+        #outputfolder = f"Output_{ timestamp }"
+        simFolder = Airsimclient.getRecordingFolder()
+        print(simFolder)
+        outputfolder = os.path.join(simFolder, "Output")
+
         #imageOutputFolder = f"Output_{ timestamp }"
         os.makedirs(outputfolder)
 
@@ -150,12 +161,15 @@ def GetOutputFolder(imageType = -1, timestamp = 0):
         os.makedirs(os.path.join(outputfolder, "Scene"))
         os.makedirs(os.path.join(outputfolder, "Segmentation"))
         os.makedirs(os.path.join(outputfolder, "Depth"))
+        os.makedirs(os.path.join(outputfolder, "Data"))
 
-    if imageType == 0:
+    if imageType == outputType.DATA:
+        return os.path.join(outputfolder, "Data")
+    elif imageType == outputType.SCENE:
         return os.path.join(outputfolder, "Scene")
-    elif imageType == 2:
+    elif imageType == outputType.DEPTH:
         return os.path.join(outputfolder, "Depth")
-    elif imageType == 5:
+    elif imageType == outputType.SEGMENTATION:
         return os.path.join(outputfolder, "Segmentation")
     
 
@@ -166,39 +180,61 @@ def GenerateImages(AirsimClient, loopCount):
     imageIndex = 0
 
     # Segmentation image
-    #segmentationResponses = client.simGetImages([
-    #    airsim.ImageRequest("CameraMiddle", airsim.ImageType.Segmentation)
-    #    ])
-    #print('Retrieved segmentation images: %d' % len(segmentationResponses))
+    segmentationResponses = client.simGetImages([
+        airsim.ImageRequest("CameraMiddle", airsim.ImageType.Segmentation)
+        ])
+    print('Retrieved segmentation images: %d' % len(segmentationResponses))
 
-    #for response_idx, response in enumerate(segmentationResponses):
-    #   imageIndex = imageIndex + 1
-    #    filename = os.path.join(GetOutputFolder(5, response.time_stamp), f"CameraMiddle_5_{loopCount}")
-    #    saveImage(response, filename)
+    for response_idx, response in enumerate(segmentationResponses):
+       imageIndex = imageIndex + 1
+       filename = os.path.join(GetOutputFolder(AirsimClient, outputType.SEGMENTATION, response.time_stamp), f"CameraMiddle_5_{loopCount}")
+       saveImage(response, filename)
 
 
     # Scene image
-    #sceneResponses = client.simGetImages([
-    #    airsim.ImageRequest("CameraMiddle", airsim.ImageType.Scene, False, False)
-    #    ])
-    #print('Retrieved images: %d' % len(sceneResponses))
+    sceneResponses = client.simGetImages([
+        airsim.ImageRequest("CameraMiddle", airsim.ImageType.Scene, False, False)
+        ])
+    print('Retrieved images: %d' % len(sceneResponses))
 
-    #for response_idx, response in enumerate(sceneResponses):
-    #   imageIndex = imageIndex + 1
-    #    filename = os.path.join(GetOutputFolder(0, response.time_stamp), f"CameraMiddle_0_{loopCount}")
-    #    saveImage(response, filename)
+    for response_idx, response in enumerate(sceneResponses):
+       imageIndex = imageIndex + 1
+       filename = os.path.join(GetOutputFolder(AirsimClient, outputType.SCENE, response.time_stamp), f"CameraMiddle_0_{loopCount}")
+       saveImage(response, filename)
 
 
     # Depth image
-    depthResponses = client.simGetImages([
-        airsim.ImageRequest("CameraMiddle", airsim.ImageType.DepthPerspective, True, False)
-        ])
-    print('Retrieved depth images: %d' % len(depthResponses))
+    AirsimClient.singleRecording()
+    while AirsimClient.isRecording():
+        # Wait for the recording to finish
+        time.sleep(0.1)
+    print('Retrieved depth images: 1')
+
+    #depthResponses = client.simGetImages([
+    #    airsim.ImageRequest("CameraMiddle", airsim.ImageType.DepthPerspective, False, False)
+    #    ])
     
-    for response_idx, response in enumerate(depthResponses):
-        imageIndex = imageIndex + 1
-        filename = os.path.join(GetOutputFolder(2, response.time_stamp), f"CameraMiddle_2_{loopCount}")
-        saveImage(response, filename)
+    #for response_idx, response in enumerate(depthResponses):
+    #    imageIndex = imageIndex + 1
+    #    filename = os.path.join(GetOutputFolder(outputType.DEPTH, response.time_stamp), f"CameraMiddle_2_{loopCount}")
+    #    saveImage(response, filename)
+
+def GenerateData(AirsimClient, loopCount):
+    # Return other information from for example sensors
+    filename = os.path.join(GetOutputFolder(AirsimClient, outputType.DATA, datetime.now()), f"data_{loopCount}")
+    tram_state = AirsimClient.getCarState()
+
+
+    # Get Tram transform at this timestamp
+    tramPose = tram_state.kinematics_estimated.position
+    
+    # Put the data in a CSV file
+    with open(filename + '.csv', mode='w') as data_file:
+        data_writer = csv.writer(data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        data_writer.writerow(['Timestamp', 'TramX', 'TramY', 'TramZ'])
+
+        # Get the data from the AirSim client
+        data_writer.writerow([datetime.now(), tramPose.x_val, tramPose.y_val, tramPose.z_val])
 
 # Setup all the listeners and threads
 def Startup():
@@ -237,23 +273,24 @@ if __name__ == '__main__':
     keepRunning = True
     loopCounter = 0
 
-    imageInterval = 0.1
-
     while(keepRunning):
         # Pause the simulation
         client.simPause(True)
     
         # Update the instance segmentation
-        #UpdateInstanceSegmentation(client)
+        UpdateInstanceSegmentation(client)
 
         # Generate images
         GenerateImages(client, loopCounter)
+
+        # Generate other data
+        GenerateData(client, loopCounter)
 
         # Unpause the simulation
         client.simPause(False)
 
         #Wait for a set amount of time
-        time.sleep(imageInterval)
+        time.sleep(IMAGE_INTERVAL)
 
         # Increase the loop counter
         loopCounter = loopCounter + 1

@@ -1,0 +1,1 @@
+this settings is an example and can be changed

@@ -143,6 +143,7 @@ void UnrealImageCapture::getSceneCaptureImage(const std::vector<msr::airlib::Ima
             response.camera_position = pose.position;
             response.camera_orientation = pose.orientation;
         }
+        response.image_type         = request.image_type;
         response.pixels_as_float    = request.pixels_as_float;
         response.compress           = request.compress;
         response.width              = render_results[i]->width;

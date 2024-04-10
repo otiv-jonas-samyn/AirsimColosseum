@@ -556,6 +556,7 @@ class VehicleClient:
         return self.client.call('simListSceneObjects', name_regex)
 
     
+    
     def simListInstanceSegmentationObjects(self):
         return self.client.call('simListInstanceSegmentationObjects')
 
@@ -613,6 +614,10 @@ class VehicleClient:
             bool: True if object is queued up for removal
         """
         return self.client.call('simDestroyObject', object_name)
+
+
+    def simInitializeSegmentation(self):
+        self.client.call('simInitializeSegmentation')
 
     def simSetSegmentationObjectID(self, mesh_name, object_id, is_name_regex = False, instanceID = 0, is_instanced = False):
         """
@@ -1043,6 +1048,33 @@ class VehicleClient:
         self.client.call('cancelLastTask', vehicle_name)
 
 #Recording APIs
+    def getRecordingFolder(self):
+        """
+        Get the folder where recordings will be saved
+
+        Returns:
+            str: Folder path where recordings will be saved
+        """
+        return self.client.call('getRecordingFolder')
+
+    def setRecordingFolder(self, folder):
+        """
+        Set the folder where recordings will be saved
+
+        Args:
+            folder (str): Desired folder path
+        """
+        self.client.call('setRecordingFolder', folder)
+
+
+    def singleRecording(self):
+        """
+        Single Recording
+
+        Recording will be done according to the settings and stop after a single recording
+        """
+        self.client.call('singleRecording')
+
     def startRecording(self):
         """
         Start Recording

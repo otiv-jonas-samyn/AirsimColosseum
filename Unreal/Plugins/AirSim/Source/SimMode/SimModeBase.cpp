@@ -642,6 +642,16 @@ bool ASimModeBase::toggleRecording()
     return isRecording();
 }
 
+void ASimModeBase::setRecordingFolder(const std::string& path)
+{
+    AirSimSettings::singleton().recording_setting.folder = path;
+}
+
+void ASimModeBase::singleRecording()
+{
+    FRecordingThread::startRecording(getSettings().recording_setting, getApiProvider()->getVehicleSimApis(), false);
+}
+
 void ASimModeBase::stopRecording()
 {
     FRecordingThread::stopRecording();

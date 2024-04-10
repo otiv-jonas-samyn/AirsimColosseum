@@ -229,34 +229,36 @@ bool UObjectPainter::SetComponentColor(FString component_id, uint32 color_index,
             return false;
         }
     }
-    else {
+    else 
+	{
         return false;
     }
 }
 
 bool UObjectPainter::SetComponentColor(FString component_id, uint32 classID, uint32 instanceID, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*> name_to_component_map, TMap<FString, FString>* color_to_name_map)
 {
-    if (name_to_component_map.Contains(component_id)) 
-	{
+    if (name_to_component_map.Contains(component_id)) {
         FColor color = GetColorForInstances(classID, instanceID);
-        UMeshComponent* actor = name_to_component_map[component_id];
-        if (PaintComponent(actor, color)) 
-		{
-            FString color_string = FString::FromInt(color.R) + "," + FString::FromInt(color.G) + "," + FString::FromInt(color.B);
-            color_to_name_map->Emplace(color_string, component_id);
-            name_to_colorindex_map->Emplace(component_id, classID);
-            UE_LOG(LogTemp, Log, TEXT("AirSim instance Segmentation: Adjusted object %s to new ID # %s (color:%s)"), *component_id, *FString::FromInt(classID), *color_string);
-            return true;
+        UMeshComponent* component = name_to_component_map[component_id];
+        AActor* actor = component->GetOwner();
+
+        //Go over all mesh components of the actor
+        TMap<FString, UMeshComponent*> paintable_components_meshes;
+        getPaintableComponentMeshes(actor, &paintable_components_meshes);
+        for (auto it = paintable_components_meshes.CreateConstIterator(); it; ++it) {
+            if (name_to_component_map.Contains(it.Key()))
+			{
+                if (PaintComponent(it.Value(), color)) {
+                    FString color_string = FString::FromInt(color.R) + "," + FString::FromInt(color.G) + "," + FString::FromInt(color.B);
+                    color_to_name_map->Emplace(color_string, component_id);
+                    name_to_colorindex_map->Emplace(component_id, classID);
+                    UE_LOG(LogTemp, Log, TEXT("AirSim instance Segmentation: Adjusted object %s to new ID # %s (color:%s)"), *component_id, *FString::FromInt(classID), *color_string);
+                }
+            }
         }
-        else 
-		{
-            return false;
-        }
+        return true;
     }
-    else 
-	{
-        return false;
-    }
+    return false;
 }
 
 
@@ -323,7 +325,9 @@ void UObjectPainter::Reset(ULevel* InLevel, TMap<FString, uint32>* name_to_color
 			TMap<FString, UMeshComponent*> paintable_components_meshes;
 			getPaintableComponentMeshes(actor, &paintable_components_meshes);
 			
-			FColor new_color = GetColorFromColorMap(color_index);
+			FColor initColor = FColor::White;
+            FColor new_color = initColor;
+
 			for (auto it = paintable_components_meshes.CreateConstIterator(); it; ++it)
 			{
 				name_to_component_map->Emplace(it.Key(), it.Value());
@@ -334,9 +338,7 @@ void UObjectPainter::Reset(ULevel* InLevel, TMap<FString, uint32>* name_to_color
 				color_to_name_map->Emplace(color_string, it.Key());
 				check(PaintComponent(it.Value(), new_color));
 				UE_LOG(LogTemp, Log, TEXT("AirSim Segmentation: Added new object %s with ID # %s (original:%s, gamma corrected:%s)"), *it.Key(), *FString::FromInt(color_index), *color_string, *color_string_gammacorrected);
-
-			}
-			
+			}			
 			color_index++;
 		}
 	}

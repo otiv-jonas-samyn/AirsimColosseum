@@ -144,8 +144,9 @@ namespace airlib
             return getWorldSimApi()->runConsoleCommand(command);
         });
 
-        pimpl_->server.bind("simGetImages", [&](const std::vector<RpcLibAdaptorsBase::ImageRequest>& request_adapter, const std::string& vehicle_name, bool external) -> vector<RpcLibAdaptorsBase::ImageResponse> {
-            const auto& response = getWorldSimApi()->getImages(RpcLibAdaptorsBase::ImageRequest::to(request_adapter), vehicle_name, external);
+        pimpl_->server.bind("simGetImages", [&](const std::vector<RpcLibAdaptorsBase::ImageRequest>& request_adapter, const std::string& vehicle_name, bool external) -> 
+            vector<RpcLibAdaptorsBase::ImageResponse> {
+                const auto& response = getWorldSimApi()->getImages(RpcLibAdaptorsBase::ImageRequest::to(request_adapter), vehicle_name, external);
             return RpcLibAdaptorsBase::ImageResponse::from(response);
         });
 
@@ -252,6 +253,10 @@ namespace airlib
         pimpl_->server.bind("simGetVehiclePose", [&](const std::string& vehicle_name) -> RpcLibAdaptorsBase::Pose {
             const auto& pose = getVehicleSimApi(vehicle_name)->getPose();
             return RpcLibAdaptorsBase::Pose(pose);
+        });
+
+        pimpl_->server.bind("simInitializeSegmentation", [&]() -> void {
+            getWorldSimApi()->InitializeSegmentation();
         });
 
         pimpl_->server.bind("simSetTraceLine", [&](const std::vector<float>& color_rgba, float thickness, const std::string& vehicle_name) -> void {
@@ -490,6 +495,20 @@ namespace airlib
 
         pimpl_->server.bind("simSetObjectMaterialFromTexture", [&](const std::string& object_name, const std::string& texture_path, const int component_id) -> bool {
             return getWorldSimApi()->setObjectMaterialFromTexture(object_name, texture_path, component_id);
+        });
+
+        pimpl_->server.bind("getRecordingFolder", [&]() -> std::string {
+            return getWorldSimApi()->getRecordingFolder();
+        });
+
+        //This will set the folder where the recording will be saved
+        pimpl_->server.bind("setRecordingFolder", [&](const std::string& path) -> void {
+            getWorldSimApi()->setRecordingFolder(path);
+        });
+
+        //This will record all camera's ones and stop
+        pimpl_->server.bind("singleRecording", [&]() -> void {
+            getWorldSimApi()->singleRecording();
         });
 
         pimpl_->server.bind("startRecording", [&]() -> void {

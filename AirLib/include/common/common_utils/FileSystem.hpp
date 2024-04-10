@@ -112,7 +112,14 @@ public:
 
     static std::string getLogFolderPath(bool folder_timestamp, const std::string& parent = "")
     {
-        std::string logfolder = folder_timestamp ? Utils::to_string(Utils::now()) : "";
+        std::string logfolder{ "" };
+        if (folder_timestamp) {
+            logfolder = Utils::to_string(Utils::now());
+
+            //Remove seconds from timestamp
+            logfolder = logfolder.substr(0, logfolder.size() - 2);
+        }
+
         std::string parent_folder = (parent == "") ? getAppDataFolder() : parent;
         std::string fullPath = combine(parent_folder, logfolder);
         ensureFolder(fullPath);

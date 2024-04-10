@@ -48,6 +48,7 @@ namespace airlib
         virtual void enableWeather(bool enable) = 0;
         virtual void setWeatherParameter(WeatherParameter param, float val) = 0;
 
+        virtual void InitializeSegmentation() = 0;
         virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false) = 0;
         virtual int getSegmentationObjectID(const std::string& mesh_name) const = 0;
 
@@ -84,6 +85,9 @@ namespace airlib
         virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) = 0;
 
         // Recording APIs
+        virtual std::string getRecordingFolder() const = 0;
+        virtual void setRecordingFolder(const std::string& path) = 0;
+        virtual void singleRecording() = 0;
         virtual void startRecording() = 0;
         virtual void stopRecording() = 0;
         virtual bool isRecording() const = 0;

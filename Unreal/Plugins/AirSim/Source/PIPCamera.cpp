@@ -385,19 +385,23 @@ void APIPCamera::setupCameraFromSettings(const APIPCamera::CameraSetting& camera
         this->SetActorTickEnabled(false);
 
     int image_count = static_cast<int>(Utils::toNumeric(ImageType::Count));
-    for (int image_type = -1; image_type < image_count; ++image_type) {
+    for (int image_type = -1; image_type < image_count; ++image_type) 
+    {
         const auto& capture_setting = camera_setting.capture_settings.at(image_type);
         const auto& noise_setting = camera_setting.noise_settings.at(image_type);
 
-        if (image_type >= 0) { //scene capture components
+        if (image_type >= 0) //scene capture components
+        { 
             auto pixel_format_override = camera_setting.ue_setting.pixel_format_override_settings.find(image_type);
             EPixelFormat pixel_format = EPixelFormat::PF_Unknown;
-            if (pixel_format_override != camera_setting.ue_setting.pixel_format_override_settings.end()) {
+            if (pixel_format_override != camera_setting.ue_setting.pixel_format_override_settings.end()) 
+            {
                 pixel_format = static_cast<EPixelFormat>(pixel_format_override->second.pixel_format);
             }
             pixel_format = (pixel_format == EPixelFormat::PF_Unknown ? image_type_to_pixel_format_map_[image_type] : pixel_format);
 
-            switch (Utils::toEnum<ImageType>(image_type)) {
+            switch (Utils::toEnum<ImageType>(image_type)) 
+            {
             case ImageType::Scene:
             case ImageType::Infrared:
                 updateCaptureComponentSetting(captures_[image_type], render_targets_[image_type], false, pixel_format, capture_setting, ned_transform, false);
@@ -416,7 +420,8 @@ void APIPCamera::setupCameraFromSettings(const APIPCamera::CameraSetting& camera
             setNoiseMaterial(image_type, captures_[image_type], captures_[image_type]->PostProcessSettings, noise_setting);
             copyCameraSettingsToSceneCapture(camera_, captures_[image_type]); //CinemAirSim
         }
-        else { //camera component
+        else //camera component
+        { 
             updateCameraSetting(camera_, capture_setting, ned_transform);
             setDistortionMaterial(image_type, camera_, camera_->PostProcessSettings);
             setNoiseMaterial(image_type, camera_, camera_->PostProcessSettings, noise_setting);

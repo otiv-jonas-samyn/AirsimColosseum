@@ -12,6 +12,10 @@
 #include "common/AirSimSettings.hpp"
 #include "common/WorkerThread.hpp"
 
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+
 class FRecordingThread : public FRunnable
 {
 public:
@@ -25,7 +29,8 @@ public:
 
     static void init();
     static void startRecording(const RecordingSetting& settings,
-                               const common_utils::UniqueValueMap<std::string, VehicleSimApiBase*>& vehicle_sim_apis);
+                               const common_utils::UniqueValueMap<std::string, VehicleSimApiBase*>& vehicle_sim_apis,
+                               const bool repeatUntillStopped = true);
 
     static void stopRecording();
     static void killRecording();
@@ -34,6 +39,11 @@ public:
 protected:
     virtual bool Init() override;
     virtual uint32 Run() override;
+
+    void Pause();
+    void Resume();
+    bool isPaused() const;
+
     virtual void Stop() override;
     virtual void Exit() override;
 
@@ -61,4 +71,11 @@ private:
     int image_Count_{};
 
     bool is_ready_;
+    bool run_untill_stopped_;
+
+    //Add pause functionality
+    std::atomic<bool> bPaused{ true };
+
+    std::mutex pause_mutex_;
+    std::condition_variable pauseCondition;
 };
