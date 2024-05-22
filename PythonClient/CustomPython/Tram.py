@@ -223,8 +223,6 @@ def GenerateData(AirsimClient, loopCount):
     # Return other information from for example sensors
     filename = os.path.join(GetOutputFolder(AirsimClient, outputType.DATA, datetime.now()), f"data_{loopCount}")
     tram_state = AirsimClient.getCarState()
-
-
     # Get Tram transform at this timestamp
     tramPose = tram_state.kinematics_estimated.position
     
