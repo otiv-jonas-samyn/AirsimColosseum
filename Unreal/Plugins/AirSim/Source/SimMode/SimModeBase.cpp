@@ -19,6 +19,8 @@
 #include "sensors/lidar/LidarSimple.hpp"
 #include "sensors/distance/DistanceSimple.hpp"
 
+#include "ObjectAirsimTagComponent.h"
+
 #include "common/ImageCaptureBase.hpp"
 
 #include "Weather/WeatherLib.h"
@@ -157,8 +159,28 @@ void ASimModeBase::BeginPlay()
     }
     UAirBlueprintLib::GenerateActorMap(this, scene_object_map);
 
+    //Loop over all actors in the world
+    for (TActorIterator<AActor> It(GetWorld()); It; ++It) 
+    {
+        AActor* pActor = *It;
+        if (pActor == nullptr) 
+        {
+            continue;
+        }
 
-    InitializeMeshVertexColorIDs();
+        if (pActor->FindComponentByClass<UObjectAirsimTagComponent>() == false) 
+        {
+            pActor->AddComponentByClass(UObjectAirsimTagComponent::StaticClass(), false, {}, true);
+        }
+    }
+
+    for (uint32 index{ static_cast<uint32>(msr::airlib::EObjectAirsimTag::OBJECT_AIRSIM_TAG_NONE) }; index < static_cast<uint32>(msr::airlib::EObjectAirsimTag::OBJECT_AIRSIM_TAG_LAST_EXCLUDE); index++) 
+    {
+        msr::airlib::EObjectAirsimTag tag = static_cast<msr::airlib::EObjectAirsimTag>(index);
+        tagToClassIDMap_.Add(tag) = 0;
+
+        UpdateInstancedObjects(tag);
+    }
 
     loading_screen_widget_->AddToViewport();
     loading_screen_widget_->SetVisibility(ESlateVisibility::Hidden);
@@ -255,7 +277,6 @@ std::vector<msr::airlib::Pose> ASimModeBase::GetAllSegmentationMeshPoses(bool ne
     return retval;
 }
 
-
 bool ASimModeBase::SetMeshVertexColorID(const std::string& mesh_name, int object_id, bool is_name_regex, int InstanceID, bool isInstanced) 
 {
     if (is_name_regex) 
@@ -324,6 +345,68 @@ bool ASimModeBase::AddNewActorToSegmentation(AActor* Actor)
 {
     return UObjectPainter::PaintNewActor(Actor, &nameToColorIndexMap_, &nameToComponentMap_, &ColorToNameMap_);
 }
+
+
+void ASimModeBase::SetClassID(msr::airlib::EObjectAirsimTag tag, int classID)
+{
+    //SET THE TAG INSTANCE ID
+    tagToClassIDMap_[tag] = static_cast<uint32>(classID);
+    UpdateInstancedObjects(tag);
+}
+
+void ASimModeBase::UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate)
+{
+    //PAINT OBJECT WITH INSTANCE ID
+    uint32 classID{ 0 };
+    if (tagToClassIDMap_.Contains(tagToUpdate))
+    {
+        classID = tagToClassIDMap_[tagToUpdate];
+    }
+    
+    //UPDATE THE OBJECTS WITH THE TAG
+    uint32 instanceCounter{ 0 };
+    
+    UWorld* pWorld{ GetWorld() };
+    if (pWorld == nullptr)
+    {
+		return;
+	}
+
+    for (TActorIterator<AActor> It(pWorld); It; ++It) 
+    {
+        AActor* pActor = *It;
+        if (pActor == nullptr)
+        {
+            continue;
+        }
+
+        if (pActor->FindComponentByClass<UObjectAirsimTagComponent>()) 
+        {
+            //TODO PAINT THE ACTOR
+            UObjectPainter::PaintActor(pActor, classID, instanceCounter);
+            if (classID != 0)
+            {
+                instanceCounter++;
+            }
+        }
+    }    
+}
+
+void ASimModeBase::AddObjectToInstance(AActor* pActor)
+{
+    if (pActor == nullptr)
+    {
+        return;
+    }
+
+    if (UObjectAirsimTagComponent* objectTagComponent = pActor->FindComponentByClass<UObjectAirsimTagComponent>()) 
+    {
+        const msr::airlib::EObjectAirsimTag tag = objectTagComponent->GetObjectAirsimTag();
+        UpdateInstancedObjects(tag);
+    }
+}
+
+
 
 void ASimModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {

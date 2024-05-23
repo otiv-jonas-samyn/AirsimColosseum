@@ -218,6 +218,11 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("simGetSegmentationObjectID", mesh_name).as<int>();
         }
 
+        void RpcLibClientBase::simSetSegmentationClassID(int tag, int classID)
+        {
+            pimpl_->client.call("simSetSegmentationClassID", tag, classID);
+        }
+
         void RpcLibClientBase::simAddDetectionFilterMeshName(const std::string& camera_name, ImageCaptureBase::ImageType type, const std::string& mesh_name, const std::string& vehicle_name, bool external)
         {
             pimpl_->client.call("simAddDetectionFilterMeshName", camera_name, type, mesh_name, vehicle_name, external);

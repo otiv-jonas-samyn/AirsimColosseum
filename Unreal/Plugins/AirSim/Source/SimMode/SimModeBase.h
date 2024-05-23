@@ -8,12 +8,16 @@
 
 #include <string>
 #include "CameraDirector.h"
+
 #include "common/AirSimSettings.hpp"
 #include "common/ClockFactory.hpp"
+#include "common/CommonEnums.hpp"
+#include "common/StateReporterWrapper.hpp"
+
 #include "api/ApiServerBase.hpp"
 #include "api/ApiProvider.hpp"
+
 #include "PawnSimApi.h"
-#include "common/StateReporterWrapper.hpp"
 #include "LoadingScreenWidget.h"
 #include "UnrealImageCapture.h"
 #include "SimModeBase.generated.h"
@@ -135,6 +139,9 @@ public:
     static void RunCommandOnGameThread(TFunction<void()> InFunction, bool wait = false, const TStatId InStatId = TStatId());
     int GetMeshVertexColorID(const std::string& mesh_name);
 
+    void SetClassID(msr::airlib::EObjectAirsimTag tag, int instanceID);
+    void UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate);
+    void AddObjectToInstance(AActor* pActor);
 
     TMap<FString, FAssetData> asset_map;
     TMap<FString, AActor*> scene_object_map;
@@ -231,6 +238,8 @@ private:
     TMap<FString, FString> ColorToNameMap_;
     /** A list of paintable objects */
     TMap<FString, UMeshComponent*> nameToComponentMap_;
+
+    TMap<msr::airlib::EObjectAirsimTag, uint32> tagToClassIDMap_;
 
     std::unique_ptr<NedTransform> global_ned_transform_;
     std::unique_ptr<msr::airlib::WorldSimApiBase> world_sim_api_;

@@ -21,6 +21,8 @@ public:
 	/** Paint all components of an newly added actor */
 	static bool PaintNewActor(AActor* actor, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*>* name_to_component_map, TMap<FString, FString>* color_to_name_map);
 
+	static bool PaintActor(AActor* pActor, uint32 classID, uint32 instanceID);
+
 	/** Reset all objects to their initial vertex color */
 	static void Reset(ULevel* InLevel, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*>* name_to_component_map, TMap<FString, FString>* color_to_name_map);
 
@@ -35,7 +37,6 @@ public:
 
 	/** Set the object color */
     static bool SetComponentColor(FString component_id, uint32 classID, uint32 instanceID, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*> name_to_component_map, TMap<FString, FString>* color_to_name_map);
-
 
 	/** Set camera ViewMode for vertex color */
 	static void SetViewForVertexColor(FEngineShowFlags& show_flags);

@@ -319,6 +319,12 @@ int WorldSimApi::getSegmentationObjectID(const std::string& mesh_name) const
     return simmode_->GetMeshVertexColorID(mesh_name);
 }
 
+void WorldSimApi::SetSegmentationClassID(int tag, int instanceID)
+{
+    msr::airlib::EObjectAirsimTag tag_enum = static_cast<msr::airlib::EObjectAirsimTag>(tag);
+    return simmode_->SetClassID(tag_enum, instanceID);
+}
+
 void WorldSimApi::printLogMessage(const std::string& message,
                                   const std::string& message_param, unsigned char severity)
 {

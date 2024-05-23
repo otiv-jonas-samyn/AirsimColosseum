@@ -1,8 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "common/CommonStructs.hpp"
+#include "common/CommonEnums.hpp"
 #include "common/GeodeticConverter.hpp"
+
 #include "api/WorldSimApiBase.hpp"
 #include "SimMode/SimModeBase.h"
 #include "Components/StaticMeshComponent.h"
@@ -42,6 +45,7 @@ public:
     virtual void InitializeSegmentation() override;
     virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false) override;
     virtual int getSegmentationObjectID(const std::string& mesh_name) const override;
+    virtual void SetSegmentationClassID(int tag, int classID) override;
 
     virtual bool addVehicle(const std::string& vehicle_name, const std::string& vehicle_type, const Pose& pose, const std::string& pawn_path = "") override;
 

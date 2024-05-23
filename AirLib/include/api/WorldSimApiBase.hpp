@@ -5,6 +5,7 @@
 #define air_WorldSimApiBase_hpp
 
 #include "common/CommonStructs.hpp"
+#include "common/CommonEnums.hpp"
 #include "common/ImageCaptureBase.hpp"
 
 namespace msr
@@ -51,6 +52,8 @@ namespace airlib
         virtual void InitializeSegmentation() = 0;
         virtual bool setSegmentationObjectID(const std::string& mesh_name, int object_id, bool is_name_regex = false, int instanceID = 0, bool isInstanced = false) = 0;
         virtual int getSegmentationObjectID(const std::string& mesh_name) const = 0;
+        
+        virtual void SetSegmentationClassID(int tag, int classID) = 0;
 
         virtual bool addVehicle(const std::string& vehicle_name, const std::string& vehicle_type, const Pose& pose, const std::string& pawn_path = "") = 0;
 

@@ -369,6 +369,10 @@ namespace airlib
             return getWorldSimApi()->listSceneObjects(name_regex);
         });
 
+        pimpl_->server.bind("simSetSegmentationClassID", [&](int tag, int classID) -> void {
+            getWorldSimApi()->SetSegmentationClassID(tag, classID);
+        });
+
         pimpl_->server.bind("simListInstanceSegmentationObjects", [&]() -> std::vector<string> {
             return getWorldSimApi()->listInstanceSegmentationObjects();
         });

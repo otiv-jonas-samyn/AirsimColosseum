@@ -619,6 +619,9 @@ class VehicleClient:
     def simInitializeSegmentation(self):
         self.client.call('simInitializeSegmentation')
 
+    def simSetSegmentationClassID(self, tag, classID):
+        return self.client.call('simSetSegmentationClassID', tag, classID)
+
     def simSetSegmentationObjectID(self, mesh_name, object_id, is_name_regex = False, instanceID = 0, is_instanced = False):
         """
         Set segmentation ID for specific objects

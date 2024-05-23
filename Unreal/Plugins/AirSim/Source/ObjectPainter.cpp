@@ -67,7 +67,6 @@ void GetColors(int32 max_val, bool enable_1, bool enable_2, bool enable_3, TArra
 	}
 }
 
-
 FColor GetColorForInstances(int32 classID, int32 instanceID)
 {
     uint8 R = static_cast<uint8>(classID); // Direct assignment of class ID to R
@@ -237,7 +236,8 @@ bool UObjectPainter::SetComponentColor(FString component_id, uint32 color_index,
 
 bool UObjectPainter::SetComponentColor(FString component_id, uint32 classID, uint32 instanceID, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*> name_to_component_map, TMap<FString, FString>* color_to_name_map)
 {
-    if (name_to_component_map.Contains(component_id)) {
+    if (name_to_component_map.Contains(component_id)) 
+	{
         FColor color = GetColorForInstances(classID, instanceID);
         UMeshComponent* component = name_to_component_map[component_id];
         AActor* actor = component->GetOwner();
@@ -245,7 +245,8 @@ bool UObjectPainter::SetComponentColor(FString component_id, uint32 classID, uin
         //Go over all mesh components of the actor
         TMap<FString, UMeshComponent*> paintable_components_meshes;
         getPaintableComponentMeshes(actor, &paintable_components_meshes);
-        for (auto it = paintable_components_meshes.CreateConstIterator(); it; ++it) {
+        for (auto it = paintable_components_meshes.CreateConstIterator(); it; ++it) 
+		{
             if (name_to_component_map.Contains(it.Key()))
 			{
                 if (PaintComponent(it.Value(), color)) {
@@ -260,7 +261,6 @@ bool UObjectPainter::SetComponentColor(FString component_id, uint32 classID, uin
     }
     return false;
 }
-
 
 bool UObjectPainter::PaintNewActor(AActor* actor, TMap<FString, uint32>* name_to_colorindex_map, TMap<FString, UMeshComponent*>* name_to_component_map, TMap<FString, FString>* color_to_name_map)
 {
@@ -296,6 +296,24 @@ bool UObjectPainter::PaintNewActor(AActor* actor, TMap<FString, uint32>* name_to
 	{
 		return false;
 	}
+}
+
+bool UObjectPainter::PaintActor(AActor* pActor, uint32 classID, uint32 instanceID)
+{
+	if (pActor == nullptr)
+	{
+        return false;
+	}
+
+	FColor color = GetColorForInstances(classID, instanceID);
+
+	TMap<FString, UMeshComponent*> paintable_components_meshes;
+    getPaintableComponentMeshes(pActor, &paintable_components_meshes);
+    for (auto it = paintable_components_meshes.CreateConstIterator(); it; ++it) 
+	{
+        PaintComponent(it.Value(), color);
+    }
+    return true;
 }
 
 uint32 UObjectPainter::GetComponentColor(FString component_id, TMap<FString, uint32> name_to_colorindex_map)
@@ -356,7 +374,6 @@ bool UObjectPainter::PaintComponent(UMeshComponent* component, const FColor& col
     
 	FString color_string = FString::FromInt(NewColor.R) + "," + FString::FromInt(NewColor.G) + "," + FString::FromInt(NewColor.B);
     UE_LOG(LogTemp, Log, TEXT("PaintComponent: AirSim instance Segmentation color:%s"), *color_string);
-
 
 	if (UStaticMeshComponent* staticmesh_component = Cast<UStaticMeshComponent>(component))
 	{
