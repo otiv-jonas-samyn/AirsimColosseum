@@ -140,7 +140,7 @@ public:
     int GetMeshVertexColorID(const std::string& mesh_name);
 
     void SetClassID(msr::airlib::EObjectAirsimTag tag, int instanceID);
-    void UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate);
+    void UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate, UWorld* pWorld = nullptr);
     void AddObjectToInstance(AActor* pActor);
 
     TMap<FString, FAssetData> asset_map;

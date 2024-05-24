@@ -349,47 +349,59 @@ bool ASimModeBase::AddNewActorToSegmentation(AActor* Actor)
 
 void ASimModeBase::SetClassID(msr::airlib::EObjectAirsimTag tag, int classID)
 {
-    //SET THE TAG INSTANCE ID
     tagToClassIDMap_[tag] = static_cast<uint32>(classID);
     UpdateInstancedObjects(tag);
 }
 
-void ASimModeBase::UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate)
+void ASimModeBase::UpdateInstancedObjects(msr::airlib::EObjectAirsimTag tagToUpdate, UWorld* pWorld)
 {
+    if (!IsInGameThread()) 
+    {
+        AsyncTask(ENamedThreads::GameThread, [this, tagToUpdate, pWorld]() {
+            UpdateInstancedObjects(tagToUpdate, pWorld);
+        });
+        return;
+    }
+
     //PAINT OBJECT WITH INSTANCE ID
     uint32 classID{ 0 };
-    if (tagToClassIDMap_.Contains(tagToUpdate))
+    if (tagToClassIDMap_.Contains(tagToUpdate)) 
     {
         classID = tagToClassIDMap_[tagToUpdate];
     }
-    
+
     //UPDATE THE OBJECTS WITH THE TAG
     uint32 instanceCounter{ 0 };
-    
-    UWorld* pWorld{ GetWorld() };
-    if (pWorld == nullptr)
+
+    if (pWorld == nullptr) 
     {
-		return;
-	}
+        pWorld = GetWorld();
+        if (pWorld == nullptr) 
+        {
+            return;
+        }
+    }
 
     for (TActorIterator<AActor> It(pWorld); It; ++It) 
     {
         AActor* pActor = *It;
-        if (pActor == nullptr)
+        if (pActor == nullptr) 
         {
             continue;
         }
 
+        UE_LOG(LogTemp, Warning, TEXT("Checking Actor %s"), *pActor->GetName());
+
         if (pActor->FindComponentByClass<UObjectAirsimTagComponent>()) 
         {
-            //TODO PAINT THE ACTOR
+            UE_LOG(LogTemp, Warning, TEXT("Found Object with Tag Component"));
             UObjectPainter::PaintActor(pActor, classID, instanceCounter);
-            if (classID != 0)
+            if (classID != 0) 
             {
                 instanceCounter++;
             }
         }
-    }    
+    }
 }
 
 void ASimModeBase::AddObjectToInstance(AActor* pActor)
