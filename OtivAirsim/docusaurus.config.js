@@ -12,14 +12,9 @@ const config = {
   tagline: 'documentation',
   favicon: 'img/OTIV.jpg',
 
-  // Set the production url of your site here
-  url: 'https://otiv-jonas-samyn.github.io',
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/OTIV-Simulator/',
+  url: 'https://otiv-jonas-samyn.github.io', // Your GitHub Pages URL
+  baseUrl: '/OTIVai/OTIV-Simulator/OtivAirsim/', // The base URL for your project
   
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
   organizationName: 'OTIV', // Usually your GitHub org/user name.
   projectName: 'OTIV-Simulator', // Usually your repo name.
   trailingSlash: false,

@@ -1,5 +1,5 @@
 ---
-id: Simulator
+id: SimulatorPage
 title: Simulator
 sidebar_label: Simulator
 ---

@@ -23,7 +23,7 @@ const sidebars = {
           type: 'category',
           label: 'Simulator',
           items: [
-            'Simulator/Simulator',
+            'Simulator/SimulatorPage',
             'Simulator/Settings',
             'Simulator/Usage',
             'Simulator/Output',
